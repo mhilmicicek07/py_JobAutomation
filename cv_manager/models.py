@@ -24,3 +24,21 @@ class CV(models.Model):
 
     def __str__(self):
         return f"{self.full_name} ({self.field})"
+    
+class Education(models.Model):
+    cv = models.ForeignKey(CV, on_delete=models.CASCADE, related_name="educations")
+    degree = models.CharField(max_length=120)
+    institution = models.CharField(max_length=160)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[("completed", "completed"), ("ongoing", "ongoing")],
+        default="completed",
+    )
+
+    class Meta:
+        ordering = ["-end_date", "-start_date", "institution"]
+
+    def __str__(self):
+        return f"{self.degree} @ {self.institution}"
