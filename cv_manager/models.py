@@ -42,3 +42,17 @@ class Education(models.Model):
 
     def __str__(self):
         return f"{self.degree} @ {self.institution}"
+    
+class Experience(models.Model):
+    cv = models.ForeignKey(CV, on_delete=models.CASCADE, related_name="experiences")
+    title = models.CharField(max_length=140)
+    company = models.CharField(max_length=160, blank=True)
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)  # None => aktuell
+    description = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-end_date", "-start_date", "company"]
+
+    def __str__(self):
+        return f"{self.title} @ {self.company or 'n/a'}"
