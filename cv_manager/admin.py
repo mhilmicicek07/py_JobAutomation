@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CV, Education, Experience, Skill, Certification
+from .models import CV, Education, Experience, Skill, Certification, Process
 
 # Register your models here.
 
@@ -36,3 +36,14 @@ class CertificationAdmin(admin.ModelAdmin):
     list_filter = ("issuer",)
     search_fields = ("name", "issuer", "cv__full_name")
     list_select_related = ("cv",)
+
+@admin.register(Process)
+class ProcessAdmin(admin.ModelAdmin):
+    list_display = ("type", "status", "cv", "start_date", "end_date", "months_col", "notes")
+    list_filter = ("type", "status")
+    search_fields = ("cv__full_name", "notes")
+    list_select_related = ("cv",)
+
+    def months_col(self, obj):
+        return obj.months_since_start
+    months_col.short_description = "months_since_start"
