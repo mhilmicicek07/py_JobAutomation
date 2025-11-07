@@ -2,18 +2,37 @@ from __future__ import annotations
 from typing import Dict, List
 from datetime import date
 
+
+# ── Yardımcı biçimlendiriciler ────────────────────────────────────────────────
+
 def _fmt_dmy(d: date | None) -> str:
+    """Gün.Ay.Yıl biçimi."""
     if not d:
         return ""
     return d.strftime("%d.%m.%Y")
 
+
 def _fmt_my(d: date | None) -> str:
+    """Ay/Yıl biçimi."""
     if not d:
         return ""
     return d.strftime("%m/%Y")
 
+
 def _join_nonempty(parts: List[str], sep: str = " • ") -> str:
+    """Boş olmayan parçaları birleştir."""
     return sep.join([p for p in parts if p])
+
+
+def _join_list(items: List[str], max_n: int = 3) -> str:
+    """Listeyi virgülle birleştir, en fazla max_n öğe göster."""
+    items = [i for i in items if i]
+    if not items:
+        return ""
+    return ", ".join(items[:max_n])
+
+
+# ── Süreç bilgilerini topla (Process modeli) ──────────────────────────────────
 
 def collect_process_facts(cv) -> List[str]:
     """
@@ -40,10 +59,12 @@ def collect_process_facts(cv) -> List[str]:
             else:
                 facts.append(f"Zeugnisbewertung seit {_fmt_dmy(p.start_date)} im Gange.")
         elif t == "BA_REG":
-            # tarih hangi alanda tutulduysa tercih et
             d = p.end_date or p.start_date
             facts.append(f"Bei der Bundesagentur für Arbeit registriert seit {_fmt_my(d)}.")
     return facts
+
+
+# ── ATS uyumlu CV bölümleri ───────────────────────────────────────────────────
 
 def build_cv_sections(cv, posting) -> Dict[str, str]:
     """
@@ -99,15 +120,32 @@ def build_cv_sections(cv, posting) -> Dict[str, str]:
         "hinweise": hinweise,
     }
 
+
+# ── Anschreiben üretimi ───────────────────────────────────────────────────────
+
 def build_cover_letter(cv, posting) -> str:
     """
-    Almanca Anschreiben metni. İlan metnini (posting.raw_text) ve süreçleri (cv.processes) referans alır.
-    Not: Selamlama ve şirket adı genel bırakıldı; kullanıcı düzenleyebilir.
+    Almanca Anschreiben metni. İlan becerilerini (posting.extracted_skills) ve süreçleri (cv.processes)
+    referans alır. Eğer extracted_skills boşsa, metinden yerinde çıkarım yapar.
     """
+    # 1) Süreç bilgileri
     process_lines = collect_process_facts(cv)
-    process_block = " ".join(process_lines)
+    process_block = " ".join(process_lines) or "Ich bin zeitnah einsetzbar."
 
-    # Çok genel bir kalıp, madde imi yok, kısa paragraflar
+    # 2) İlan becerileri
+    skills: List[str] = []
+    if hasattr(posting, "extracted_skills") and posting.extracted_skills:
+        skills = posting.extracted_skills
+    else:
+        # Yedek: metinden çıkar
+        from job_analyzer import services as ja_services  # lazy import
+        data = ja_services.extract_requirements(posting.raw_text, posting.target_field)
+        skills = data.get("skills", []) or []
+
+    skills_snippet = _join_list(skills, max_n=3)  # en fazla 3 beceri vurgula
+    skills_sentence = f"Besonders relevant finde ich: {skills_snippet}." if skills_snippet else ""
+
+    # 3) Metin blokları (alan bazlı giriş)
     if cv.field == "WEB":
         einleitung = (
             "Sehr geehrte Damen und Herren,\n\n"
@@ -119,7 +157,7 @@ def build_cover_letter(cv, posting) -> str:
         einleitung = (
             "Sehr geehrte Damen und Herren,\n\n"
             "gerne bewerbe ich mich auf Ihre Position in der Finanzbuchhaltung. "
-            "Ich verfüge über fundierte Erfahrung in der Kreditorenbuchhaltung, im Zahlungsverkehr und in der Abstimmung von Konten "
+            "Ich verfüge über Erfahrung in der Kreditorenbuchhaltung, im Zahlungsverkehr und in der Abstimmung von Konten "
             "sowie in vorbereitenden Tätigkeiten für Monats- und Jahresabschlüsse nach HGB."
         )
     else:
@@ -130,16 +168,12 @@ def build_cover_letter(cv, posting) -> str:
         )
 
     kompetenz = (
-        "Relevante Kenntnisse entnehme ich der Ausschreibung und stelle sie passgenau bereit. "
-        "Ich arbeite strukturiert, eigenverantwortlich und lege Wert auf saubere, nachvollziehbare Ergebnisse."
+        "Ich arbeite strukturiert, eigenverantwortlich und lege Wert auf nachvollziehbare Ergebnisse. "
+        + (skills_sentence if skills_sentence else "")
     )
 
-    verfuegbarkeit = process_block or "Ich bin zeitnah einsetzbar."
-
-    schluss = (
-        "Über die Möglichkeit eines persönlichen Gesprächs freue ich mich. "
-        "Mit freundlichen Grüßen"
-    )
+    verfuegbarkeit = process_block
+    schluss = "Über die Möglichkeit eines persönlichen Gesprächs freue ich mich.\n\nMit freundlichen Grüßen"
 
     letter = "\n\n".join([einleitung, kompetenz, verfuegbarkeit, schluss])
     return letter
