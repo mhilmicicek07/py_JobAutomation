@@ -74,3 +74,12 @@ def score_posting_against_cv(cv, skills_needed: List[str]) -> int:
     denom = len(need_norm) or 1
     pct = round(100 * len(matched) / denom)
     return max(0, min(100, pct))
+
+def decision_from_score(score: int | None) -> str:
+    if score is None:
+        return "REVIEW"
+    if score >= 80:
+        return "APPLY"
+    if score >= 50:
+        return "REVIEW"
+    return "SKIP"
