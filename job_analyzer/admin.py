@@ -17,19 +17,30 @@ def analyze_postings(modeladmin, request, queryset):
         # 3) Skoru hesapla
         score = services.score_posting_against_cv(cv, skills)
 
-        # 4) Kaydet
+        # 4) Kararı belirle
+        decision = services.decision_from_score(score)
+
+        # 5) Kaydet
         obj.extracted_skills = skills
         obj.extracted_experience = experience
         obj.match_score = score
-        obj.save(update_fields=["extracted_skills", "extracted_experience", "match_score", "updated_at"])
+        obj.decision = decision
+        obj.save(update_fields=[
+            "extracted_skills",
+            "extracted_experience",
+            "match_score",
+            "decision",
+            "updated_at",
+        ])
         ok += 1
 
     messages.success(request, f"{ok} ilan analiz edildi ve puanlandı.")
 
+
 @admin.register(JobPosting)
 class JobPostingAdmin(admin.ModelAdmin):
-    list_display = ("id", "target_field", "match_score", "created_at")
-    list_filter = ("target_field",)
+    list_display = ("id", "target_field", "match_score", "decision", "created_at")
+    list_filter = ("target_field", "decision")
     search_fields = ("raw_text",)
     readonly_fields = ("created_at", "updated_at")
     actions = [analyze_postings]
