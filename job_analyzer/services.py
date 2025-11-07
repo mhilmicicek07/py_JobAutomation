@@ -1,26 +1,42 @@
 from __future__ import annotations
 from typing import Dict, List, Set
 from django.db.models import Q
+import re
 
 # Basit anahtar kelime havuzu (MVP). Zamanla genişletiriz.
 SKILL_KEYWORDS: Dict[str, Set[str]] = {
     "WEB": {
-        "python", "django", "rest", "api", "rest api", "sql",
-        "postgresql", "mysql", "javascript", "typescript", "react",
-        "git", "docker", "ci/cd", "linux", "unit test", "unittest"
+        "python", "django", "rest api", "rest", "api",
+        "fastapi", "flask",
+        "sql", "postgresql", "mysql", "sqlite",
+        "javascript", "typescript", "react", "git",
+        "docker", "linux", "unit test", "pytest", "ci cd",
     },
     "BWL": {
-        "sap", "sap fi", "sap f110", "f110", "ebics", "datev",
-        "hgb", "ifrs", "monatsabschluss", "jahresabschluss",
+        "sap", "sap fi", "fi",
+        "s4hana", "s/4hana", "sap s/4hana",
+        "sap f110", "f110",
+        "ebics", "datev",
+        "hgb", "ifrs",
+        "monatsabschluss", "jahresabschluss",
         "kreditorenbuchhaltung", "debitorenbuchhaltung",
-        "zahlungsverkehr", "controlling", "kostenrechnung",
-        "excel", "ms excel", "kontoabstimmung"
+        "zahlungsverkehr",
+        "kontenabstimmung", "kontenklärung", "kontenpflege",
+        "rechnungsprüfung", "kontierung", "rechnungseingang",
+        "opos", "offene posten", "skonto",
+        "mahnen", "mahnwesen",
+        "excel", "pivottabellen", "sverweis", "power query",
     },
     "GEN": set(),
 }
 
 def _normalize_text(s: str) -> str:
-    return (s or "").lower()
+    s = (s or "").lower()
+    s = s.replace("ß", "ss")
+    s = re.sub(r"[\-_/]", " ", s)                 # tire/alt tire → boşluk
+    s = re.sub(r"[.,;:(){}\[\]–—•·]", " ", s)     # noktalama temizle
+    s = re.sub(r"\s+", " ", s).strip()            # boşlukları sadeleştir
+    return s
 
 def extract_requirements(raw_text: str, target_field: str) -> Dict[str, List[str]]:
     """
