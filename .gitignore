@@ -1,0 +1,92 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Packaging
+.Python
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Tests / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite
+media/
+# collected static output (uygun ise)
+staticfiles/
+static_root/
+
+# Env / secrets
+.env
+.env.*
+*.env
+
+# Virtual env
+venv/
+.venv/
+ENV/
+env/
+venv.bak/
+
+# IDE / OS
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Type checkers / linters
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+
+# pyenv
+.python-version
+
+# Lock files (opsiyonel)
+Pipfile.lock
+poetry.lock
+
+# Misc cache
+*.cache
+
+# Jupyter
+.ipynb_checkpoints/
