@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CV, Education, Experience, Skill
+from .models import CV, Education, Experience, Skill, Certification
 
 # Register your models here.
 
@@ -28,4 +28,11 @@ class SkillAdmin(admin.ModelAdmin):
     list_display = ("name", "cv", "level")
     list_filter = ("level",)
     search_fields = ("name", "cv__full_name")
+    list_select_related = ("cv",)
+
+@admin.register(Certification)
+class CertificationAdmin(admin.ModelAdmin):
+    list_display = ("name", "issuer", "cv", "issue_date", "expire_date")
+    list_filter = ("issuer",)
+    search_fields = ("name", "issuer", "cv__full_name")
     list_select_related = ("cv",)
