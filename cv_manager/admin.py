@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CV, Education
+from .models import CV, Education, Experience
 
 # Register your models here.
 
@@ -14,4 +14,11 @@ class EducationAdmin(admin.ModelAdmin):
     list_display = ("degree", "institution", "cv", "start_date", "end_date", "status")
     list_filter = ("status", "institution")
     search_fields = ("degree", "institution", "cv__full_name")
+    list_select_related = ("cv",)
+
+@admin.register(Experience)
+class ExperienceAdmin(admin.ModelAdmin):
+    list_display = ("title", "company", "cv", "start_date", "end_date")
+    list_filter = ("company",)
+    search_fields = ("title", "company", "cv__full_name")
     list_select_related = ("cv",)
