@@ -88,3 +88,42 @@ class Certification(models.Model):
 
     def __str__(self):
         return self.name
+    
+class Process(models.Model):
+    TYPE_CHOICES = [
+        ("WORK_PERMIT", "Work permit valid until"),       # end_date kullan
+        ("UNPAID_LEAVE", "Unpaid leave since"),           # start_date -> ongoing
+        ("RESIGNATION", "Resignation completed on"),      # end_date = event_date
+        ("DL_UMSCHREIBEN", "Driver license Umschreiben"), # start_date -> ongoing/done
+        ("DIPLOMA_EVAL", "Diploma evaluation"),           # start_date -> ongoing/done
+        ("BA_REG", "Bundesagentur registration"),         # event
+    ]
+    STATUS_CHOICES = [
+        ("ONGOING", "ongoing"),
+        ("DONE", "done"),
+    ]
+
+    cv = models.ForeignKey(CV, on_delete=models.CASCADE, related_name="processes")
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="ONGOING")
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    notes = models.CharField(max_length=240, blank=True)
+
+    class Meta:
+        ordering = ["type"]
+
+    def __str__(self):
+        return f"{self.get_type_display()} ({self.status})"
+
+    @property
+    def months_since_start(self):
+        """start_date varsa bugüne göre geçen tam ay sayısı."""
+        from django.utils import timezone
+        if not self.start_date:
+            return None
+        today = timezone.localdate()
+        total = (today.year - self.start_date.year) * 12 + (today.month - self.start_date.month)
+        if today.day < self.start_date.day:
+            total -= 1
+        return max(total, 0)
