@@ -56,3 +56,21 @@ class Experience(models.Model):
 
     def __str__(self):
         return f"{self.title} @ {self.company or 'n/a'}"
+
+class Skill(models.Model):
+    LEVELS = [
+        ("basic", "basic"),
+        ("intermediate", "intermediate"),
+        ("advanced", "advanced"),
+    ]
+
+    cv = models.ForeignKey(CV, on_delete=models.CASCADE, related_name="skills")
+    name = models.CharField(max_length=120, db_index=True)
+    level = models.CharField(max_length=20, choices=LEVELS, blank=True)
+
+    class Meta:
+        ordering = ["name"]
+        unique_together = ("cv", "name")
+
+    def __str__(self):
+        return self.name
