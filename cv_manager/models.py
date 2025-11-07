@@ -74,3 +74,17 @@ class Skill(models.Model):
 
     def __str__(self):
         return self.name
+    
+class Certification(models.Model):
+    cv = models.ForeignKey(CV, on_delete=models.CASCADE, related_name="certifications")
+    name = models.CharField(max_length=160)
+    issuer = models.CharField(max_length=160, blank=True)
+    issue_date = models.DateField(null=True, blank=True)
+    expire_date = models.DateField(null=True, blank=True)
+    credential_id = models.CharField(max_length=120, blank=True)
+
+    class Meta:
+        ordering = ["-issue_date", "name"]
+
+    def __str__(self):
+        return self.name
