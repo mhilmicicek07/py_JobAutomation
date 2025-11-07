@@ -32,6 +32,7 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 INSTALLED_APPS = [
     'cv_manager',
+    'job_analyzer',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
