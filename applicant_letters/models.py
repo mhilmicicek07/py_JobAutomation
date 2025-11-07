@@ -33,4 +33,4 @@ class ApplicationDraft(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"Draft p{self.posting_id} / cv{self.cv_id} [{self.language}]"
+        return f"Draft p{self.posting_id} / cv{self.cv_id} [{self.language}]" # type: ignore[attr-defined]
