@@ -6,6 +6,11 @@ TARGET_FIELD_CHOICES = [
     ("BWL", "BWL"),
     ("WEB", "Webentwickler"),
 ]
+DECISION_CHOICES = [
+    ("APPLY", "apply"),
+    ("REVIEW", "review"),
+    ("SKIP", "skip"),
+]
 
 class JobPosting(models.Model):
     raw_text = models.TextField()  # ilan metni (düz metin)
@@ -15,6 +20,8 @@ class JobPosting(models.Model):
     extracted_experience = models.JSONField(default=list, blank=True)   # ["REST API","SQL",...]
 
     match_score = models.PositiveSmallIntegerField(null=True, blank=True)  # 0-100
+
+    decision = models.CharField(max_length=10, choices=DECISION_CHOICES, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
