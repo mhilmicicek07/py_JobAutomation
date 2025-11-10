@@ -110,14 +110,23 @@ def build_cv_sections(cv, posting) -> Dict[str, str]:
 
     # Berufserfahrung
     exps = Experience.objects.filter(cv=cv).order_by("-end_date", "-start_date")
-    erfahrung_lines: List[str] = []
+
+    # İlan becerileri kümesi (üstte zaten post_skills/need hesaplandı)
+    need_lower = need  # {skill.lower() ...}
+
+    matched_lines, unmatched_lines = [], []
     for e in exps:
         zeitraum = _join_nonempty([_fmt_my(e.start_date), _fmt_my(e.end_date)], " – ")
         kopf = _join_nonempty([zeitraum, f"{e.title}", e.company], " | ")
         desc = (e.description or "").strip()
         line = kopf if not desc else f"{kopf}\n  • {desc}"
-        erfahrung_lines.append(line)
-    erfahrung = "\n".join(erfahrung_lines)
+
+        text_for_match = f"{e.title} {e.company or ''} {desc}".lower()
+        has_match = any(k in text_for_match for k in need_lower)
+
+        (matched_lines if has_match else unmatched_lines).append(line)
+
+    erfahrung = "\n".join(matched_lines + unmatched_lines)
 
     # Ausbildung
     edus = Education.objects.filter(cv=cv).order_by("-end_date", "-start_date")
