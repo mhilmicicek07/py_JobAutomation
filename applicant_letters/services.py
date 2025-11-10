@@ -103,6 +103,10 @@ def build_cv_sections(cv, posting) -> Dict[str, str]:
     matched = [s for s in all_skills if s.lower() in need]
     unmatched = [s for s in all_skills if s.lower() not in need]
     kenntnisse = ", ".join(matched + unmatched)
+    diagnostik = {
+        "matched_skills": matched,
+        "missing_skills": [s for s in post_skills if s.lower() not in {x.lower() for x in all_skills}],
+    }
 
     # Berufserfahrung
     exps = Experience.objects.filter(cv=cv).order_by("-end_date", "-start_date")
@@ -133,6 +137,7 @@ def build_cv_sections(cv, posting) -> Dict[str, str]:
         "erfahrung": erfahrung,
         "ausbildung": ausbildung,
         "hinweise": hinweise,
+        "diagnostik": diagnostik, # type: ignore
     }
 
 
