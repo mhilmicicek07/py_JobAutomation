@@ -1,4 +1,5 @@
 from __future__ import annotations
+from django.conf import settings
 from typing import Dict, List, Set
 from django.db.models import Q
 import re
@@ -92,10 +93,12 @@ def score_posting_against_cv(cv, skills_needed: List[str]) -> int:
     return max(0, min(100, pct))
 
 def decision_from_score(score: int | None) -> str:
+    apply_t = getattr(settings, "JOB_MATCH_THRESHOLDS", {}).get("APPLY", 80)
+    review_t = getattr(settings, "JOB_MATCH_THRESHOLDS", {}).get("REVIEW", 50)
     if score is None:
         return "REVIEW"
-    if score >= 80:
+    if score >= apply_t:
         return "APPLY"
-    if score >= 50:
+    if score >= review_t:
         return "REVIEW"
     return "SKIP"
