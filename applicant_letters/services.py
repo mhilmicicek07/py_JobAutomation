@@ -1,3 +1,4 @@
+# applicant_letters/services.py
 from __future__ import annotations
 from typing import Dict, List
 from datetime import date
@@ -84,10 +85,24 @@ def build_cv_sections(cv, posting) -> Dict[str, str]:
     else:
         profil = f"{cv.full_name} – Berufliches Profil."
 
-    # Kenntnisse
+    # Kenntnisse (ilandaki beceriler öne)
     from cv_manager.models import Skill, Experience, Education  # lazy import
-    skills = Skill.objects.filter(cv=cv).order_by("name").values_list("name", flat=True)
-    kenntnisse = ", ".join(skills)
+    from job_analyzer import services as ja_services            # ilan becerileri için
+
+    # İlan becerileri (analiz edilmişse onu kullan; yoksa yerinde çıkar)
+    post_skills: List[str] = []
+    if hasattr(posting, "extracted_skills") and posting.extracted_skills:
+        post_skills = posting.extracted_skills
+    else:
+        data = ja_services.extract_requirements(posting.raw_text, posting.target_field)
+        post_skills = data.get("skills", []) or []
+    need = {s.lower() for s in post_skills}
+
+    # CV becerileri
+    all_skills = list(Skill.objects.filter(cv=cv).order_by("name").values_list("name", flat=True))
+    matched = [s for s in all_skills if s.lower() in need]
+    unmatched = [s for s in all_skills if s.lower() not in need]
+    kenntnisse = ", ".join(matched + unmatched)
 
     # Berufserfahrung
     exps = Experience.objects.filter(cv=cv).order_by("-end_date", "-start_date")
@@ -137,11 +152,9 @@ def build_cover_letter(cv, posting) -> str:
     if hasattr(posting, "extracted_skills") and posting.extracted_skills:
         skills = posting.extracted_skills
     else:
-        # Yedek: metinden çıkar
         from job_analyzer import services as ja_services  # lazy import
         data = ja_services.extract_requirements(posting.raw_text, posting.target_field)
         skills = data.get("skills", []) or []
-
     skills_snippet = _join_list(skills, max_n=3)  # en fazla 3 beceri vurgula
     skills_sentence = f"Besonders relevant finde ich: {skills_snippet}." if skills_snippet else ""
 
