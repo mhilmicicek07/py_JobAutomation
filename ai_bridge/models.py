@@ -40,3 +40,19 @@ class ExtractionSnapshot(models.Model):
     def __str__(self):
         ref = self.posting_id or self.cv_id or "-" # type: ignore
         return f"{self.kind} snapshot #{self.id} for {ref}" # type: ignore
+
+class CVSource(models.Model):
+    """
+    Ham CV metni (PDF’ten kopyalanmış düz metin olabilir).
+    Aynı CV’ye birden fazla varyasyon eklenebilir.
+    """
+    cv = models.ForeignKey(CV, on_delete=models.CASCADE, related_name="sources")
+    raw_text = models.TextField()
+    note = models.CharField(max_length=120, blank=True)  # örn: "IT CV v1", "BWL CV v2"
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"CVSource #{self.id} for CV {self.cv_id}" # type: ignore
