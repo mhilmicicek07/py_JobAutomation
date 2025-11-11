@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'cv_manager',
     'job_analyzer',
     'applicant_letters',
+    'ai_bridge',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
