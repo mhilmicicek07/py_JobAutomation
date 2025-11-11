@@ -55,6 +55,39 @@ def create_application_drafts(modeladmin, request, queryset):
 
     messages.success(request, f"{ok} taslak oluşturuldu/güncellendi.")
 
+@admin.action(description="AI: İlandan gereksinimleri çıkar (snapshot kaydet)")
+def ai_snapshot_postings(modeladmin, request, queryset):
+    from ai_bridge.services import ai_extract_posting
+    from ai_bridge.models import ExtractionSnapshot
+
+    ok = 0
+    for obj in queryset:
+        try:
+            result = ai_extract_posting(obj)
+            ExtractionSnapshot.objects.create(
+                kind="POSTING",
+                posting=obj,
+                input_text=obj.raw_text or "",
+                output=result,
+                provider="stub",
+                model_name="",   # ileride gerçek model adı
+                status="OK",
+                error_message="",
+            )
+            ok += 1
+        except Exception as e:
+            ExtractionSnapshot.objects.create(
+                kind="POSTING",
+                posting=obj,
+                input_text=obj.raw_text or "",
+                output={},
+                provider="stub",
+                model_name="",
+                status="ERR",
+                error_message=str(e),
+            )
+    messages.success(request, f"{ok} ilan için AI snapshot oluşturuldu.")
+
 
 @admin.register(JobPosting)
 class JobPostingAdmin(admin.ModelAdmin):
@@ -62,4 +95,4 @@ class JobPostingAdmin(admin.ModelAdmin):
     list_filter = ("target_field", "decision")
     search_fields = ("raw_text",)
     readonly_fields = ("created_at", "updated_at")
-    actions = [analyze_postings, create_application_drafts]
+    actions = [analyze_postings, create_application_drafts, ai_snapshot_postings]
