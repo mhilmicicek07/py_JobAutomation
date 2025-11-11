@@ -19,6 +19,14 @@ def _fmt_my(d: date | None) -> str:
         return ""
     return d.strftime("%m/%Y")
 
+def _period_str(start, end) -> str:
+    if start and not end:
+        return f"seit {_fmt_my(start)}"
+    if start and end:
+        return f"{_fmt_my(start)} – {_fmt_my(end)}"
+    if end:
+        return _fmt_my(end)
+    return ""
 
 def _join_nonempty(parts: List[str], sep: str = " • ") -> str:
     """Boş olmayan parçaları birleştir."""
@@ -116,7 +124,7 @@ def build_cv_sections(cv, posting) -> Dict[str, str]:
 
     matched_lines, unmatched_lines = [], []
     for e in exps:
-        zeitraum = _join_nonempty([_fmt_my(e.start_date), _fmt_my(e.end_date)], " – ")
+        zeitraum = _period_str(e.start_date, e.end_date)
         kopf = _join_nonempty([zeitraum, f"{e.title}", e.company], " | ")
         desc = (e.description or "").strip()
         line = kopf if not desc else f"{kopf}\n  • {desc}"
