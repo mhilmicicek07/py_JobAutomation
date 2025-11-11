@@ -1,6 +1,6 @@
 from __future__ import annotations
 from django.conf import settings
-from typing import Dict, List, Set
+from typing import Iterable, Dict, List, Set
 from django.db.models import Q
 import re
 
@@ -31,6 +31,23 @@ SKILL_KEYWORDS: Dict[str, Set[str]] = {
     "GEN": set(),
 }
 
+_CANON_MAP = {
+    "rest": "rest api",
+    "api": "rest api",
+    "unit tests": "unit test",
+    "unittest": "unit test",
+}
+
+def _canonicalize_skills(skills: Iterable[str]) -> List[str]:
+    """Eşanlamlıları birleştir, gereksiz kopyaları at."""
+    out: Set[str] = set()
+    for s in skills:
+        key = (s or "").strip().lower()
+        key = _CANON_MAP.get(key, key)
+        out.add(key)
+    # 'rest api' varsa 'rest'/'api' zaten düşecek.
+    return sorted(out)
+
 def _normalize_text(s: str) -> str:
     s = (s or "").lower()
     s = s.replace("ß", "ss")
@@ -48,6 +65,8 @@ def extract_requirements(raw_text: str, target_field: str) -> Dict[str, List[str
     skills = sorted({kw for kw in pool if kw in text})
     # MVP: experience çıkarımını aynı havuzdan dönüyoruz; ileride ayrı set kullanırız.
     experience = skills.copy()
+    skills = _canonicalize_skills(skills)
+    experience = _canonicalize_skills(experience)
     return {"skills": skills, "experience": experience}
 
 def get_primary_cv_or_fallback(field: str):
