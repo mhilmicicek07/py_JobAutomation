@@ -98,11 +98,20 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
         "sap", "sap fi", "f110", "ebics", "datev", "hgb", "excel",
     ]
 
+    # Çok kelimeli ve tek kelimeli skill'leri ayır
+    multi_tokens = [t for t in SKILL_TOKENS if " " in t]
+    single_tokens = [t for t in SKILL_TOKENS if " " not in t]
+
     skills: List[str] = []
     for ln in lines:
         lower = ln.lower()
-        for tok in SKILL_TOKENS:
+        # Çok kelimeli skill'ler (substring kontrolü yeterli)
+        for tok in multi_tokens:
             if tok in lower:
+                skills.append(_canonical_skill(tok))
+        # Tek kelimeli skill'ler (kelime sınırı ile, "datev" ≠ "datenverwaltung")
+        for tok in single_tokens:
+            if re.search(r"\b" + re.escape(tok) + r"\b", lower):
                 skills.append(_canonical_skill(tok))
     skills = _uniq_keep_order(skills)
 
@@ -118,6 +127,11 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
     )
     exp_pattern_comma = re.compile(
         r"^(?P<title>.+?),\s+(?:(?P<start>\d{2}/\d{4})\s*[–-]\s*(?P<end>\d{2}/\d{4}|heute)|seit\s+(?P<seit>\d{2}/\d{4}))$",
+        re.IGNORECASE,
+    )
+    # Generic: "Title/Company .... 01/2019 – 10/2025"
+    exp_pattern_generic = re.compile(
+        r"^(?P<head>.+?)\s+(?P<start>\d{2}/\d{4})\s*[–-]\s*(?P<end>\d{2}/\d{4}|heute)\s*$",
         re.IGNORECASE,
     )
 
@@ -157,8 +171,14 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
 
     # Bullet karakterleri (başlangıç tespiti için)
     BULLET_RE = r"^[\u2022\u2219\u25CF\u00B7\u25E6\u2043\-\*•·●]"
+    date_pattern = re.compile(r"\d{2}/\d{4}")
 
-    for ln in lines:
+    skip_next = False
+    for idx, ln in enumerate(lines):
+        if skip_next:
+            skip_next = False
+            continue
+
         low = ln.lower().strip()
 
         # Bölüm başlıklarını yakala
@@ -192,8 +212,16 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
 
         # ----- Experience başlıkları (yalnızca exp bölümünde veya bölüm belirtilmemişse) -----
         matched_header = False
+        header_text = ln
+        lookahead_used = False
+
         if sec in (None, "exp"):
-            m = exp_pattern_bar.search(ln)
+            # BWL CV'deki gibi tarih bir sonraki satırdaysa iki satırı birleştir
+            if not date_pattern.search(ln) and idx + 1 < len(lines) and date_pattern.search(lines[idx + 1]):
+                header_text = f"{ln} {lines[idx + 1].strip()}"
+                lookahead_used = True
+
+            m = exp_pattern_bar.search(header_text)
             if m:
                 matched_header = True
                 seit_flag = bool(m.group(1))
@@ -203,7 +231,7 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
                 title = m.group(5).strip()
                 company = m.group(6).strip()
             else:
-                m = exp_pattern_dash.search(ln)
+                m = exp_pattern_dash.search(header_text)
                 if m:
                     matched_header = True
                     seit_flag = bool(m.group("seit"))
@@ -213,7 +241,7 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
                     title = m.group("title").strip()
                     company = m.group("company").strip()
                 else:
-                    m = exp_pattern_comma.search(ln)
+                    m = exp_pattern_comma.search(header_text)
                     if m:
                         matched_header = True
                         seit_flag = bool(m.group("seit"))
@@ -222,6 +250,17 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
                         end_my = m.group("end")
                         title = m.group("title").strip()
                         company = ""
+            # Generic pattern: "something ... 01/2019 – 10/2025"
+            if not matched_header:
+                m = exp_pattern_generic.search(header_text)
+                if m:
+                    matched_header = True
+                    seit_flag = False
+                    seit_my = None
+                    start_my = m.group("start")
+                    end_my = m.group("end")
+                    title = m.group("head").strip()
+                    company = ""
 
         if matched_header:
             # önceki exp kaydının açıklamasını kapat
@@ -241,6 +280,8 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
                 "description": "",
             })
             last_idx = len(exp) - 1
+            if lookahead_used:
+                skip_next = True  # tarihi içeren satırı tekrar işlememek için
             continue
 
         # Başlık değilse ve exp bölümündeysek: bullet açıklamaları
