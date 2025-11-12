@@ -48,6 +48,14 @@ def _uniq_keep_order(items: List[str]) -> List[str]:
     return out
 
 
+LEADING_NOISE_RE = re.compile(r"^[\s\W_]+", re.UNICODE)
+
+
+def _lstrip_symbols(s: str) -> str:
+    """Başta yer alan boşluk, noktalama, bullet vb sembolleri temizle."""
+    return LEADING_NOISE_RE.sub("", (s or "").strip())
+
+
 # ── AI çıkarımı (POSTING) – stub/heuristik ────────────────────────────────────
 
 def ai_extract_posting(posting) -> Dict[str, Any]:
@@ -147,7 +155,7 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
     sec = None            # None | "exp" | "edu"
     pending_edu = None    # (degree, inst) iki satırlı eğitim için bekletme
 
-    # Bullet karakterleri
+    # Bullet karakterleri (başlangıç tespiti için)
     BULLET_RE = r"^[\u2022\u2219\u25CF\u00B7\u25E6\u2043\-\*•·●]"
 
     for ln in lines:
@@ -221,8 +229,8 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
                 exp[last_idx]["description"] = " ".join(descr_buffer).strip()
                 descr_buffer = []
 
-            # baştaki bullet karakterlerini başlıktan temizle
-            title = re.sub(rf"{BULLET_RE}\s*", "", title)
+            # başlıktaki ön sembolleri temizle
+            title = _lstrip_symbols(title)
 
             end_is_heute = bool(end_my and str(end_my).lower() == "heute")
             exp.append({
@@ -238,7 +246,7 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
         # Başlık değilse ve exp bölümündeysek: bullet açıklamaları
         if sec in (None, "exp") and last_idx is not None:
             if re.match(BULLET_RE, ln):
-                descr_buffer.append(re.sub(rf"{BULLET_RE}\s*", "", ln).strip())
+                descr_buffer.append(_lstrip_symbols(ln))
                 continue
 
         # ----- Education (yalnızca edu bölümünde) -----
@@ -246,8 +254,8 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
             # İki satırlı: önce header, sonra sadece tarih
             m = edu_pattern_header_pending.search(ln)
             if m:
-                degree = re.sub(rf"{BULLET_RE}\s*", "", m.group("degree").strip())
-                inst = re.sub(rf"{BULLET_RE}\s*", "", m.group("inst").strip())
+                degree = _lstrip_symbols(m.group("degree"))
+                inst = _lstrip_symbols(m.group("inst"))
                 pending_edu = (degree, inst)
                 continue
 
@@ -268,8 +276,8 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
 
             m = edu_pattern_bar.search(ln)
             if m:
-                degree = re.sub(rf"{BULLET_RE}\s*", "", m.group(3).strip())
-                inst = re.sub(rf"{BULLET_RE}\s*", "", m.group(4).strip())
+                degree = _lstrip_symbols(m.group(3))
+                inst = _lstrip_symbols(m.group(4))
                 edu.append({
                     "start": m.group(1),
                     "end": m.group(2),
@@ -281,8 +289,8 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
 
             m = edu_pattern_dash.search(ln)
             if m:
-                degree = re.sub(rf"{BULLET_RE}\s*", "", m.group("degree").strip())
-                inst = re.sub(rf"{BULLET_RE}\s*", "", m.group("inst").strip())
+                degree = _lstrip_symbols(m.group("degree"))
+                inst = _lstrip_symbols(m.group("inst"))
                 edu.append({
                     "start": m.group("start"),
                     "end": m.group("end"),
@@ -294,8 +302,8 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
 
             m = edu_pattern_deg_inst_comma.search(ln)
             if m:
-                degree = re.sub(rf"{BULLET_RE}\s*", "", m.group("degree").strip())
-                inst = re.sub(rf"{BULLET_RE}\s*", "", m.group("inst").strip())
+                degree = _lstrip_symbols(m.group("degree"))
+                inst = _lstrip_symbols(m.group("inst"))
                 edu.append({
                     "start": m.group("start"),
                     "end": m.group("end"),
@@ -307,7 +315,7 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
 
             m = edu_pattern_comma.search(ln)
             if m:
-                degree = re.sub(rf"{BULLET_RE}\s*", "", m.group("degree").strip())
+                degree = _lstrip_symbols(m.group("degree"))
                 edu.append({
                     "start": m.group("start"),
                     "end": m.group("end"),
@@ -319,8 +327,8 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
 
             m = edu_pattern_single.search(ln)
             if m:
-                degree = re.sub(rf"{BULLET_RE}\s*", "", m.group("degree").strip())
-                inst = re.sub(rf"{BULLET_RE}\s*", "", m.group("inst").strip())
+                degree = _lstrip_symbols(m.group("degree"))
+                inst = _lstrip_symbols(m.group("inst"))
                 edu.append({
                     "start": m.group("single"),
                     "end": None,
