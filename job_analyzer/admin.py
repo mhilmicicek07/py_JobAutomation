@@ -1,6 +1,10 @@
 from django.contrib import admin, messages
 from .models import JobPosting
 from . import services
+from ai_bridge.models import ExtractionSnapshot
+from applicant_letters.models import ApplicationDraft
+from applicant_letters import services as letter_services
+
 
 @admin.action(description="İlanı analiz et ve puanla")
 def analyze_postings(modeladmin, request, queryset):
@@ -9,6 +13,7 @@ def analyze_postings(modeladmin, request, queryset):
         data = services.extract_requirements(obj.raw_text, obj.target_field)
         skills = data.get("skills", [])
         experience = data.get("experience", [])
+
         cv = services.get_primary_cv_or_fallback(obj.target_field)
         score = services.score_posting_against_cv(cv, skills)
         decision = services.decision_from_score(score)
@@ -17,76 +22,134 @@ def analyze_postings(modeladmin, request, queryset):
         obj.extracted_experience = experience
         obj.match_score = score
         obj.decision = decision
-        obj.save(update_fields=[
-            "extracted_skills",
-            "extracted_experience",
-            "match_score",
-            "decision",
-            "updated_at",
-        ])
+        obj.save(
+            update_fields=[
+                "extracted_skills",
+                "extracted_experience",
+                "match_score",
+                "decision",
+                "updated_at",
+            ]
+        )
         ok += 1
+
     messages.success(request, f"{ok} ilan analiz edildi ve puanlandı.")
 
 
 @admin.action(description="Taslak oluştur (CV bölümleri + Anschreiben)")
 def create_application_drafts(modeladmin, request, queryset):
-    # applicant_letters servislerini içeri al
-    from applicant_letters.models import ApplicationDraft
-    from applicant_letters import services as letter_services
-
-    ok = 0
+    created = 0
     for obj in queryset:
-        # 1) Uygun CV'yi seç
+        # İlanın hedef alanına göre uygun CV'yi seç
         cv = services.get_primary_cv_or_fallback(obj.target_field)
-        if not cv:
-            continue
 
-        # 2) Bölüm ve mektup üret
-        sections = letter_services.build_cv_sections(cv, obj)
-        letter = letter_services.build_cover_letter(cv, obj)
+        # CV bölümlerini ve Anschreiben taslağını üret
+        cv_sections = letter_services.build_cv_sections(cv, obj)
+        cover_letter = letter_services.build_cover_letter(cv, obj, cv_sections) # type: ignore
 
-        # 3) Taslağı oluştur / güncelle
-        draft, _created = ApplicationDraft.objects.get_or_create(posting=obj, cv=cv)
-        draft.cv_sections = sections
-        draft.cover_letter = letter
-        draft.language = "de"
-        draft.save(update_fields=["cv_sections", "cover_letter", "language", "updated_at"])
-        ok += 1
+        # Aynı ilan + aynı CV için tek taslak (update_or_create ile)
+        draft, was_created = ApplicationDraft.objects.update_or_create(
+            posting=obj,
+            cv=cv,
+            defaults={
+                "cv_sections": cv_sections,
+                "cover_letter": cover_letter,
+                "language": "de",
+            },
+        )
+        if was_created:
+            created += 1
 
-    messages.success(request, f"{ok} taslak oluşturuldu/güncellendi.")
+    messages.success(request, f"{created} ilan için başvuru taslağı oluşturuldu.")
+
 
 @admin.action(description="AI: İlandan gereksinimleri çıkar (snapshot kaydet)")
 def ai_snapshot_postings(modeladmin, request, queryset):
-    from ai_bridge.services import ai_extract_posting
-    from ai_bridge.models import ExtractionSnapshot
+    from ai_bridge import services as ai_services
 
     ok = 0
     for obj in queryset:
         try:
-            result = ai_extract_posting(obj)
+            output = ai_services.ai_extract_posting(obj)
             ExtractionSnapshot.objects.create(
                 kind="POSTING",
                 posting=obj,
-                input_text=obj.raw_text or "",
-                output=result,
+                input_text=obj.raw_text,
+                output=output,
                 provider="stub",
-                model_name="",   # ileride gerçek model adı
+                model_name="",
                 status="OK",
                 error_message="",
             )
             ok += 1
-        except Exception as e:
+        except Exception as e:  # çok nadir: parsing ya da başka hata
             ExtractionSnapshot.objects.create(
                 kind="POSTING",
                 posting=obj,
-                input_text=obj.raw_text or "",
+                input_text=obj.raw_text,
                 output={},
                 provider="stub",
                 model_name="",
                 status="ERR",
                 error_message=str(e),
             )
+
     messages.success(request, f"{ok} ilan için AI snapshot oluşturuldu.")
+
+
+@admin.action(description="AI: Son ilan snapshot’ını uygula (skills + experience)")
+def apply_latest_posting_snapshot(modeladmin, request, queryset):
+    """
+    En son (status=OK) POSTING snapshot'ını bulur,
+    JobPosting.extracted_skills / extracted_experience + match_score + decision alanlarını günceller.
+    """
+    applied = 0
+    missing = 0
+
+    for obj in queryset:
+        snap = (
+            ExtractionSnapshot.objects.filter(
+                kind="POSTING", posting=obj, status="OK"
+            )
+            .order_by("-created_at")
+            .first()
+        )
+        if not snap or not snap.output:
+            missing += 1
+            continue
+
+        data = snap.output or {}
+        skills = data.get("skills") or []
+        experience = data.get("experience") or []
+
+        obj.extracted_skills = skills
+        obj.extracted_experience = experience
+
+        # Snapshot'tan gelen skillerle skoru yeniden hesapla
+        cv = services.get_primary_cv_or_fallback(obj.target_field)
+        score = services.score_posting_against_cv(cv, skills)
+        obj.match_score = score
+        obj.decision = services.decision_from_score(score)
+
+        obj.save(
+            update_fields=[
+                "extracted_skills",
+                "extracted_experience",
+                "match_score",
+                "decision",
+                "updated_at",
+            ]
+        )
+        applied += 1
+
+    if applied:
+        extra = f" {missing} ilan için snapshot bulunamadı." if missing else ""
+        messages.success(
+            request,
+            f"{applied} ilan için son AI snapshot'ı uygulandı." + extra,
+        )
+    else:
+        messages.warning(request, "Hiçbir ilan için snapshot uygulanamadı.")
 
 
 @admin.register(JobPosting)
@@ -95,4 +158,9 @@ class JobPostingAdmin(admin.ModelAdmin):
     list_filter = ("target_field", "decision")
     search_fields = ("raw_text",)
     readonly_fields = ("created_at", "updated_at")
-    actions = [analyze_postings, create_application_drafts, ai_snapshot_postings]
+    actions = [
+        analyze_postings,
+        create_application_drafts,
+        ai_snapshot_postings,
+        apply_latest_posting_snapshot,
+    ]
