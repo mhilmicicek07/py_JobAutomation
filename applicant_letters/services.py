@@ -1,7 +1,10 @@
-# applicant_letters/services.py
 from __future__ import annotations
 from typing import Dict, List
 from datetime import date
+import os
+import json
+
+from django.conf import settings
 
 
 # ── Yardımcı biçimlendiriciler ────────────────────────────────────────────────
@@ -160,12 +163,65 @@ def build_cv_sections(cv, posting) -> Dict[str, str]:
 
 # ── Anschreiben üretimi ───────────────────────────────────────────────────────
 
+def _build_cover_letter_openai(cv, posting, skills, process_lines, cv_sections) -> str:
+    """
+    OpenAI Responses API ile Almanca Anschreiben üretir.
+    """
+    try:
+        from openai import OpenAI
+    except ImportError as exc:
+        raise RuntimeError(
+            "openai paketi yüklü değil. `pip install openai` çalıştır."
+        ) from exc
+
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY ortam değişkeni set edilmemiş.")
+
+    client = OpenAI(api_key=api_key)
+    model = (
+        getattr(settings, "OPENAI_MODEL_LETTER", None)
+        or getattr(settings, "OPENAI_DEFAULT_MODEL", "gpt-4o-mini")
+    )
+
+    payload = {
+        "job_posting_text": getattr(posting, "raw_text", ""),
+        "target_field": getattr(posting, "target_field", ""),
+        "posting_skills": list(skills or []),
+        "cv_field": getattr(cv, "field", ""),
+        "cv_full_name": getattr(cv, "full_name", ""),
+        "cv_sections": cv_sections,
+        "process_facts": process_lines,
+    }
+
+    instructions = (
+        "Du bist ein deutscher Bewerbungscoach. "
+        "Lies die JSON-Daten in der Eingabe (job_posting_text, cv_sections, process_facts). "
+        "Schreibe ein vollständiges Anschreiben für eine Bewerbung in Deutschland. "
+        "Sprich den Arbeitgeber mit der formellen Anrede ('Sie') an. "
+        "Wenn im job_posting_text eine konkrete Kontaktperson (z.B. 'Frau Müller') klar erkennbar ist, "
+        "verwende 'Sehr geehrte Frau Müller,' oder 'Sehr geehrter Herr ...'. "
+        "Sonst verwende 'Sehr geehrte Damen und Herren,'. "
+        "Gehe auf die wichtigsten Anforderungen der Stelle ein und verbinde sie mit den Erfahrungen und Kenntnissen "
+        "aus cv_sections. Nutze process_facts (z.B. Arbeitsgenehmigung, Zeugnisbewertung, Verfügbarkeit), wenn sinnvoll. "
+        "Antworte NUR mit dem finalen Anschreiben als Klartext, ohne Erklärungen und ohne JSON."
+    )
+
+    resp = client.responses.create(
+        model=model,
+        instructions=instructions,
+        input=json.dumps(payload, ensure_ascii=False),
+    )
+    return (resp.output_text or "").strip()
+
 def build_cover_letter(cv, posting) -> str:
     """
     Almanca Anschreiben metni. İlan becerilerini (posting.extracted_skills) ve süreçleri (cv.processes)
     referans alır. Eğer extracted_skills boşsa, metinden yerinde çıkarım yapar.
+    OpenAI etkinse (AI_COVER_LETTER_PROVIDER veya AI_PROVIDER 'openai' ise) önce AI ile üretmeyi dener,
+    hata olursa klasik template'e düşer.
     """
-    # 1) Süreç bilgileri
+    # 1) Süreç bilgileri (Verfügbarkeit vb.)
     process_lines = collect_process_facts(cv)
     process_block = " ".join(process_lines) or "Ich bin zeitnah einsetzbar."
 
@@ -176,19 +232,53 @@ def build_cover_letter(cv, posting) -> str:
     else:
         from job_analyzer import services as ja_services  # lazy import
         data = ja_services.extract_requirements(posting.raw_text, posting.target_field)
-        skills = data.get("skills", []) or []
-    skills_snippet = _join_list(skills, max_n=3)  # en fazla 3 beceri vurgula
-    skills_sentence = f"Besonders relevant finde ich: {skills_snippet}." if skills_snippet else ""
+        skills = data.get("skills", []) if isinstance(data, dict) else (data or [])
 
-    # 3) Metin blokları (alan bazlı giriş)
-    if cv.field == "WEB":
+    # 3) CV bölümleri (profil, kenntnisse, berufserfahrung)
+    cv_sections = build_cv_sections(cv, posting)
+
+    # 3a) AI yolu – yalnızca provider 'openai' ise dene
+    provider = getattr(settings, "AI_COVER_LETTER_PROVIDER", None) or getattr(
+        settings, "AI_PROVIDER", "stub"
+    )
+    if provider == "openai":
+        try:
+            return _build_cover_letter_openai(
+                cv=cv,
+                posting=posting,
+                skills=skills,
+                process_lines=process_lines,
+                cv_sections=cv_sections,
+            )
+        except Exception:
+            # Sessizce klasik template'e düş; log eklemek istersen burada yapabilirsin.
+            pass
+
+    # ── Klasik template tabanlı Anschreiben ───────────────────────────────────
+
+    # Becerileri kısaca bir cümleye dök
+    skills_sentence = ""
+    if skills:
+        # 5–6 beceriyi geçmesin
+        max_skills = 6
+        short_list = [s for s in skills][:max_skills]
+        skills_sentence = (
+            " Meine Schwerpunkte liegen unter anderem in "
+            + ", ".join(short_list[:-1])
+            + (" und " + short_list[-1] if len(short_list) > 1 else short_list[0])
+            + "."
+        )
+
+    # CV alanına göre giriş paragrafı
+    field = getattr(cv, "field", "")
+    if field == "WEB":
         einleitung = (
             "Sehr geehrte Damen und Herren,\n\n"
             "mit großem Interesse bewerbe ich mich auf Ihre Position im Bereich Webentwicklung. "
             "Ich bringe praxisnahe Erfahrung mit Python/Django im Backend und modernen JavaScript-Frameworks im Frontend mit. "
             "In Projekten habe ich REST-APIs konzipiert und implementiert, Datenmodelle aufgebaut und Schnittstellen stabil betrieben."
         )
-    elif cv.field == "BWL":
+    elif field == "BWL":
         einleitung = (
             "Sehr geehrte Damen und Herren,\n\n"
             "gerne bewerbe ich mich auf Ihre Position in der Finanzbuchhaltung. "
