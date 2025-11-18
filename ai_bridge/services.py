@@ -1,8 +1,11 @@
-# ai_bridge/services.py
 from __future__ import annotations
 from typing import Dict, Any, List
 from datetime import date
 import re
+import os
+import json
+
+from django.conf import settings
 
 
 # ── Yardımcılar ───────────────────────────────────────────────────────────────
@@ -55,6 +58,54 @@ def _lstrip_symbols(s: str) -> str:
     """Başta yer alan boşluk, noktalama, bullet vb sembolleri temizle."""
     return LEADING_NOISE_RE.sub("", (s or "").strip())
 
+# ── OpenAI yardımcıları (genel) ──────────────────────────────────────────────
+
+def _get_openai_client():
+    """
+    Ortamdan OPENAI_API_KEY okuyup OpenAI client döner.
+    Paket yüklü değilse veya key yoksa RuntimeError fırlatır.
+    """
+    try:
+        from openai import OpenAI
+    except ImportError as exc:
+        raise RuntimeError(
+            "openai paketi yüklü değil. `pip install openai` çalıştır."
+        ) from exc
+
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "OPENAI_API_KEY ortam değişkeni set edilmemiş."
+        )
+
+    return OpenAI(api_key=api_key)
+
+
+def _call_openai_json(instructions: str, user_input: str, model_setting_name: str) -> Dict[str, Any]:
+    """
+    JSON mode ile cevap dönen yardımcı.
+    instructions → sistem rolü / açıklama,
+    user_input → metnin kendisi (CV veya ilan).
+    model_setting_name → settings içindeki model ayarının adı (örn. 'OPENAI_MODEL_POSTING').
+    """
+    provider = getattr(settings, "AI_PROVIDER", "stub")
+    if provider != "openai":
+        raise RuntimeError("AI_PROVIDER 'openai' değilken _call_openai_json çağrıldı.")
+
+    client = _get_openai_client()
+    model = (
+        getattr(settings, model_setting_name, None)
+        or getattr(settings, "OPENAI_DEFAULT_MODEL", "gpt-4o-mini")
+    )
+
+    resp = client.responses.create(
+        model=model,
+        response_format={"type": "json_object"},
+        instructions=instructions,
+        input=user_input,
+    ) # type: ignore
+    text = resp.output_text
+    return json.loads(text)
 
 # ── AI çıkarımı (POSTING) – stub/heuristik ────────────────────────────────────
 
