@@ -127,3 +127,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Skor eşikleri
 JOB_MATCH_THRESHOLDS = {"APPLY": 80, "REVIEW": 50}
+
+# ── AI / LLM ayarları ─────────────────────────────────────────────────────────
+
+# Genel AI sağlayıcı ayarı
+# Şimdilik 'stub' kalsın, fonksiyonları yazdıktan sonra 'openai' yaparız.
+AI_PROVIDER = "stub"   # "openai" / "stub"
+
+# Varsayılan model
+OPENAI_DEFAULT_MODEL = "gpt-4o-mini"
+
+# İstersen ileride bunları farklı da yapabiliriz ama şimdilik hepsi aynı:
+OPENAI_MODEL_CV = "gpt-4o-mini"         # CV extraction
+OPENAI_MODEL_POSTING = "gpt-4o-mini"    # Job posting extraction
+OPENAI_MODEL_LETTER = "gpt-4o-mini"     # Cover letter / Anschreiben
+
+# Sadece Anschreiben için ayrı provider (yoksa AI_PROVIDER kullanılır)
+AI_COVER_LETTER_PROVIDER = "openai"
