@@ -477,6 +477,65 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
 
     return {"skills": skills, "experience": exp, "education": edu}
 
+def _ai_extract_cv_openai(raw_text: str) -> Dict[str, Any]:
+    """
+    CV metnini OpenAI ile parse eder.
+
+    Çıktı şeması:
+    {
+      "skills": ["python", "django", ...],
+      "experience": [
+        {
+          "title": "...",
+          "company": "...",
+          "start": "MM/YYYY" veya null,
+          "end": "MM/YYYY" veya null,
+          "description": "kısa açıklama"
+        },
+        ...
+      ],
+      "education": [
+        {
+          "degree": "...",
+          "institution": "...",
+          "start": "MM/YYYY" veya null,
+          "end": "MM/YYYY" veya null,
+          "status": "completed" | "ongoing" | "unknown"
+        },
+        ...
+      ]
+    }
+    """
+    instructions = (
+        "You are a CV parser. The user provides the full text of a CV in German, "
+        "Turkish or English. You MUST respond with a single JSON object only, no extra text.\n\n"
+        "JSON schema:\n"
+        "{\n"
+        '  \"skills\": [\"python\", \"django\", ...],\n'
+        '  \"experience\": [\n'
+        '    {\"title\": \"...\", \"company\": \"...\", \"start\": \"MM/YYYY\" or null, '
+        '\"end\": \"MM/YYYY\" or null, \"description\": \"...\"}\n'
+        "  ],\n"
+        '  \"education\": [\n'
+        '    {\"degree\": \"...\", \"institution\": \"...\", \"start\": \"MM/YYYY\" or null, '
+        '\"end\": \"MM/YYYY\" or null, \"status\": \"completed\" | \"ongoing\" | \"unknown\"}\n'
+        "  ]\n"
+        "}\n"
+        "Use null for missing dates."
+    )
+
+    data = _call_openai_json(
+        instructions=instructions,
+        user_input=raw_text,
+        model_setting_name="OPENAI_MODEL_CV",
+    )
+
+    # Güvenlik: en azından boş listeler dön
+    return {
+        "skills": data.get("skills") or [],
+        "experience": data.get("experience") or [],
+        "education": data.get("education") or [],
+    }
 
 def ai_extract_cv(cv_source) -> Dict[str, Any]:
     """CVSource.raw_text üzerinden çıkarım."""
