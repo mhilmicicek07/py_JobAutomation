@@ -132,7 +132,7 @@ JOB_MATCH_THRESHOLDS = {"APPLY": 80, "REVIEW": 50}
 
 # Genel AI sağlayıcı ayarı
 # Şimdilik 'stub' kalsın, fonksiyonları yazdıktan sonra 'openai' yaparız.
-AI_PROVIDER = "stub"   # "openai" / "stub"
+AI_PROVIDER = "openai"   # "openai" / "stub"
 
 # Varsayılan model
 OPENAI_DEFAULT_MODEL = "gpt-4o-mini"
