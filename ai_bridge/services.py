@@ -111,14 +111,55 @@ def _call_openai_json(instructions: str, user_input: str, model_setting_name: st
 
 def ai_extract_posting(posting) -> Dict[str, Any]:
     """
-    Şimdilik stub: job_analyzer.services.extract_requirements ile simüle ediyoruz.
+    JobPosting için AI destekli çıkarım.
+
+    - AI_PROVIDER == 'openai' ise OpenAI JSON extraction kullanır.
+    - Diğer durumlarda eski heuristik extract_requirements'e düşer.
     """
-    from job_analyzer import services as ja_services
-    data = ja_services.extract_requirements(posting.raw_text, posting.target_field)
+    raw = posting.raw_text or ""
+    target_field = getattr(posting, "target_field", "")
+
+    provider = getattr(settings, "AI_PROVIDER", "stub")
+
+    # OpenAI yolu
+    if provider == "openai":
+        instructions = (
+            "You are an assistant that extracts requirements from German job postings "
+            "and returns a JSON object with this schema:\n"
+            "{\n"
+            '  \"skills\": [\"skill1\", \"skill2\", ...],\n'
+            '  \"experience\": [\"sentence1\", \"sentence2\", ...]\n'
+            "}\n\n"
+            "skills: distinct, lowercased skill or technology names (e.g. 'python', "
+            "'sap fi', 'ms excel'), short strings.\n"
+            "experience: short textual requirements or responsibilities as sentences. "
+            "Respond with JSON only, no explanations."
+        )
+        try:
+            data = _call_openai_json(
+                instructions=instructions,
+                user_input=raw,
+                model_setting_name="OPENAI_MODEL_POSTING",
+            )
+            skills = data.get("skills") or []
+            experience = data.get("experience") or []
+        except Exception:
+            # Herhangi bir hata olursa heuristik fallback
+            from job_analyzer import services as ja_services
+            data = ja_services.extract_requirements(raw, target_field)
+            skills = data.get("skills", [])
+            experience = data.get("experience", [])
+    else:
+        # Eski davranış (stub / heuristik)
+        from job_analyzer import services as ja_services
+        data = ja_services.extract_requirements(raw, target_field)
+        skills = data.get("skills", [])
+        experience = data.get("experience", [])
+
     return {
-        "skills": data.get("skills", []),
-        "experience": data.get("experience", []),
-        "target_field": posting.target_field,
+        "skills": skills,
+        "experience": experience,
+        "target_field": target_field,
     }
 
 
