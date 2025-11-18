@@ -195,17 +195,24 @@ def _build_cover_letter_openai(cv, posting, skills, process_lines, cv_sections) 
     }
 
     instructions = (
-        "Du bist ein deutscher Bewerbungscoach. "
-        "Lies die JSON-Daten in der Eingabe (job_posting_text, cv_sections, process_facts). "
-        "Schreibe ein vollständiges Anschreiben für eine Bewerbung in Deutschland. "
-        "Sprich den Arbeitgeber mit der formellen Anrede ('Sie') an. "
-        "Wenn im job_posting_text eine konkrete Kontaktperson (z.B. 'Frau Müller') klar erkennbar ist, "
-        "verwende 'Sehr geehrte Frau Müller,' oder 'Sehr geehrter Herr ...'. "
-        "Sonst verwende 'Sehr geehrte Damen und Herren,'. "
-        "Gehe auf die wichtigsten Anforderungen der Stelle ein und verbinde sie mit den Erfahrungen und Kenntnissen "
-        "aus cv_sections. Nutze process_facts (z.B. Arbeitsgenehmigung, Zeugnisbewertung, Verfügbarkeit), wenn sinnvoll. "
-        "Antworte NUR mit dem finalen Anschreiben als Klartext, ohne Erklärungen und ohne JSON."
-    )
+    "Du bist ein deutscher Bewerbungscoach. "
+    "Lies die JSON-Daten in der Eingabe (job_posting_text, cv_sections, process_facts). "
+    "Schreibe ein vollständiges Anschreiben für eine Bewerbung in Deutschland. "
+    "Sprich den Arbeitgeber mit der formellen Anrede ('Sie') an. "
+    "Wenn im job_posting_text eine konkrete Kontaktperson (z.B. 'Frau Müller') klar erkennbar ist, "
+    "verwende 'Sehr geehrte Frau Müller,' oder 'Sehr geehrter Herr ...'. "
+    "Sonst verwende 'Sehr geehrte Damen und Herren,'. "
+    "Gehe auf die wichtigsten Anforderungen der Stelle ein und verbinde sie mit den Erfahrungen und Kenntnissen "
+    "aus cv_sections. Nutze process_facts (z.B. Arbeitsgenehmigung, Zeugnisbewertung, Verfügbarkeit), wenn sinnvoll. "
+    "Verwende NUR Informationen, die in den JSON-Daten enthalten sind; erfinde keine zusätzlichen Stationen, "
+    "Qualifikationen oder Defizite. "
+    "Formuliere das Anschreiben GRUNDSÄTZLICH POSITIV: betone passende Erfahrungen, Lernbereitschaft und Motivation. "
+    "Schreibe KEINE Sätze wie 'ich habe keine Erfahrung mit ...', 'mir fehlt ...' oder ähnliche Formulierungen, "
+    "die den Bewerber schwächer wirken lassen. "
+    "Wenn Technologien aus der Stellenanzeige im Lebenslauf nicht explizit vorkommen, kannst du sie höchstens als "
+    "Lernziel oder Interesse erwähnen (z.B. 'ich baue meine Kenntnisse in X weiter aus'), aber nicht als Mangel. "
+    "Antworte NUR mit dem finalen Anschreiben als Klartext, ohne Erklärungen und ohne JSON."
+)
 
     resp = client.responses.create(
         model=model,
