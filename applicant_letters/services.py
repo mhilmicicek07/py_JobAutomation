@@ -277,18 +277,52 @@ def build_cover_letter(cv, posting) -> str:
 
     # ── Klasik template tabanlı Anschreiben ───────────────────────────────────
 
-    # Becerileri kısaca bir cümleye dök
+    # Becerileri kısaca bir cümleye dök – diagnostik'e göre
     skills_sentence = ""
-    if skills:
-        # 5–6 beceriyi geçmesin
+
+    diagnostik = {}
+    if isinstance(cv_sections, dict):
+        diagnostik = cv_sections.get("diagnostik") or {}
+
+    matched = diagnostik.get("matched_skills") or [] # type: ignore
+    missing = set(diagnostik.get("missing_skills") or []) # type: ignore
+
+    # 1) Tercihen matched_skills
+    skills_for_sentence: List[str] = []
+
+    if matched:
+        skills_for_sentence = matched
+    else:
+        # 2) Aksi halde ilandan gelen skills, ama missing olanları ayıkla
+        base = skills or []
+        skills_for_sentence = [s for s in base if s not in missing]
+
+    # Boşları at, küçük/büyük harf farkı olmadan benzersizleştir
+    cleaned: List[str] = []
+    seen_keys = set()
+    for s in skills_for_sentence:
+        s_norm = (s or "").strip()
+        if not s_norm:
+            continue
+        key = s_norm.lower()
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        cleaned.append(s_norm)
+
+    if cleaned:
         max_skills = 6
-        short_list = [s for s in skills][:max_skills]
-        skills_sentence = (
-            " Meine Schwerpunkte liegen unter anderem in "
-            + ", ".join(short_list[:-1])
-            + (" und " + short_list[-1] if len(short_list) > 1 else short_list[0])
-            + "."
-        )
+        short_list = cleaned[:max_skills]
+        if len(short_list) == 1:
+            skills_sentence = f" Meine Schwerpunkte liegen unter anderem in {short_list[0]}."
+        else:
+            skills_sentence = (
+                " Meine Schwerpunkte liegen unter anderem in "
+                + ", ".join(short_list[:-1])
+                + " und "
+                + short_list[-1]
+                + "."
+            )
 
     # CV alanına göre giriş paragrafı
     field = getattr(cv, "field", "")
