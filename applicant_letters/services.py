@@ -3,8 +3,11 @@ from typing import Dict, List
 from datetime import date
 import os
 import json
+import logging
 
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 # ── Yardımcı biçimlendiriciler ────────────────────────────────────────────────
@@ -258,8 +261,10 @@ def build_cover_letter(cv, posting) -> str:
                 cv_sections=cv_sections,
             )
         except Exception:
-            # Sessizce klasik template'e düş; log eklemek istersen burada yapabilirsin.
-            pass
+            logger.exception(
+                "OpenAI cover letter generation failed; falling back to template."
+            )
+            # Buradan sonra klasik template kodu çalışmaya devam edecek
 
     # ── Klasik template tabanlı Anschreiben ───────────────────────────────────
 
