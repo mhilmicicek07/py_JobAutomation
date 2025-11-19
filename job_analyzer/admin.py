@@ -45,7 +45,7 @@ def create_application_drafts(modeladmin, request, queryset):
 
         # CV bölümlerini ve Anschreiben taslağını üret
         cv_sections = letter_services.build_cv_sections(cv, obj)
-        cover_letter = letter_services.build_cover_letter(cv, obj, cv_sections) # type: ignore
+        cover_letter = letter_services.build_cover_letter(cv, obj)
 
         # Aynı ilan + aynı CV için tek taslak (update_or_create ile)
         draft, was_created = ApplicationDraft.objects.update_or_create(
