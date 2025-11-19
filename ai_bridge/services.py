@@ -4,8 +4,11 @@ from datetime import date
 import re
 import os
 import json
+import logging
 
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 # ── Yardımcılar ───────────────────────────────────────────────────────────────
@@ -29,12 +32,55 @@ def _parse_my(token: str) -> date | None:
     return None
 
 
-def _canonical_skill(s: str) -> str:
-    """Eşanlamlıları kanonik hale getir."""
+def _norm_range_token(token: str) -> str:
+    """
+    Ay isimleri vs gelirse çok basit normalize et.
+    Örn:
+      '03/2019' → '03/2019'
+      '2019-03' → '03/2019'
+    """
+    token = (token or "").strip()
+    m = re.match(r"^(\d{4})-(\d{2})$", token)
+    if m:
+        yyyy, mm = m.group(1), m.group(2)
+        return f"{mm}/{yyyy}"
+    return token
+
+
+def _safe_int(text: str, default: int | None = None) -> int | None:
+    try:
+        return int(text)
+    except (TypeError, ValueError):
+        return default
+
+
+def _shorten_skill(s: str) -> str:
+    """
+    Çok uzun gereksiz açıklamaları kırpar.
+    Örn: 'Sehr gute Kenntnisse in Microsoft Excel' → 'excel'
+    """
     s = (s or "").strip().lower()
-    if s in {"rest", "api"}:
+    if "excel" in s:
+        return "excel"
+    if "python" in s:
+        return "python"
+    if "django" in s:
+        return "django"
+    if "rest api" in s or "rest-api" in s:
         return "rest api"
-    if s in {"unit tests", "unittest"}:
+    if "sql" in s:
+        return "sql"
+    if "javascript" in s:
+        return "javascript"
+    if "react" in s:
+        return "react"
+    if "docker" in s:
+        return "docker"
+    if "linux" in s:
+        return "linux"
+    if "git" in s:
+        return "git"
+    if "unit test" in s or "unittest" in s:
         return "unit test"
     return s
 
@@ -58,6 +104,7 @@ def _lstrip_symbols(s: str) -> str:
     """Başta yer alan boşluk, noktalama, bullet vb sembolleri temizle."""
     return LEADING_NOISE_RE.sub("", (s or "").strip())
 
+
 # ── OpenAI yardımcıları (genel) ──────────────────────────────────────────────
 
 def _get_openai_client():
@@ -74,9 +121,7 @@ def _get_openai_client():
 
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError(
-            "OPENAI_API_KEY ortam değişkeni set edilmemiş."
-        )
+        raise RuntimeError("OPENAI_API_KEY ortam değişkeni set edilmemiş.")
 
     return OpenAI(api_key=api_key)
 
@@ -107,7 +152,8 @@ def _call_openai_json(instructions: str, user_input: str, model_setting_name: st
     text = resp.output_text
     return json.loads(text)
 
-# ── AI çıkarımı (POSTING) – stub/heuristik ────────────────────────────────────
+
+# ── AI çıkarımı (POSTING) – OpenAI + heuristik fallback ──────────────────────
 
 def ai_extract_posting(posting) -> Dict[str, Any]:
     """
@@ -127,11 +173,11 @@ def ai_extract_posting(posting) -> Dict[str, Any]:
             "You are an assistant that extracts requirements from German job postings "
             "and returns a JSON object with this schema:\n"
             "{\n"
-            '  \"skills\": [\"skill1\", \"skill2\", ...],\n'
-            '  \"experience\": [\"sentence1\", \"sentence2\", ...]\n'
+            '  "skills": ["skill1", "skill2", ...],\n'
+            '  "experience": ["sentence1", "sentence2", ...]\n'
             "}\n\n"
             "skills: distinct, lowercased skill or technology names (e.g. 'python', "
-            "'sap fi', 'ms excel'), short strings.\n"
+            "'sap fi', 'ms excel'), short strings. "
             "experience: short textual requirements or responsibilities as sentences. "
             "Respond with JSON only, no explanations."
         )
@@ -144,7 +190,9 @@ def ai_extract_posting(posting) -> Dict[str, Any]:
             skills = data.get("skills") or []
             experience = data.get("experience") or []
         except Exception:
-            # Herhangi bir hata olursa heuristik fallback
+            logger.exception(
+                "OpenAI job posting extraction failed; falling back to heuristics."
+            )
             from job_analyzer import services as ja_services
             data = ja_services.extract_requirements(raw, target_field)
             skills = data.get("skills", [])
@@ -186,296 +234,129 @@ def ai_extract_cv_text(raw_text: str) -> Dict[str, Any]:
     # Basit anahtar kelime sezgisi (WEB + biraz BWL)
     SKILL_TOKENS = [
         "python", "django", "rest api", "sql", "postgresql", "mysql", "sqlite",
-        "javascript", "typescript", "react", "git", "docker", "linux",
-        "sap", "sap fi", "f110", "ebics", "datev", "hgb", "excel",
+        "javascript", "react", "docker", "linux", "git", "unit test",
+        "datev", "sap", "excel", "word", "powerpoint",
     ]
+    skills_found: List[str] = []
 
-    # Çok kelimeli ve tek kelimeli skill'leri ayır
-    multi_tokens = [t for t in SKILL_TOKENS if " " in t]
-    single_tokens = [t for t in SKILL_TOKENS if " " not in t]
-
-    skills: List[str] = []
-    for ln in lines:
-        lower = ln.lower()
-        # Çok kelimeli skill'ler (substring kontrolü yeterli)
-        for tok in multi_tokens:
-            if tok in lower:
-                skills.append(_canonical_skill(tok))
-        # Tek kelimeli skill'ler (kelime sınırı ile, "datev" ≠ "datenverwaltung")
-        for tok in single_tokens:
-            if re.search(r"\b" + re.escape(tok) + r"\b", lower):
-                skills.append(_canonical_skill(tok))
-    skills = _uniq_keep_order(skills)
-
-    # ── Desenler ───────────────────────────────────────────────────────────────
-    # Experience başlıkları
-    exp_pattern_bar = re.compile(
-        r"(?:(seit)\s+(\d{2}/\d{4})|(\d{2}/\d{4})\s*[–-]\s*(\d{2}/\d{4}|heute))\s*\|\s*([^|]+?)\s*\|\s*(.+)$",
-        re.IGNORECASE,
-    )
-    exp_pattern_dash = re.compile(
-        r"^(?P<title>.+?)\s+[–-]\s+(?P<company>.+?)\s+(?:(?P<start>\d{2}/\d{4})\s*[–-]\s*(?P<end>\d{2}/\d{4}|heute)|seit\s+(?P<seit>\d{2}/\d{4}))$",
-        re.IGNORECASE,
-    )
-    exp_pattern_comma = re.compile(
-        r"^(?P<title>.+?),\s+(?:(?P<start>\d{2}/\d{4})\s*[–-]\s*(?P<end>\d{2}/\d{4}|heute)|seit\s+(?P<seit>\d{2}/\d{4}))$",
-        re.IGNORECASE,
-    )
-    # Generic: "Title/Company .... 01/2019 – 10/2025"
-    exp_pattern_generic = re.compile(
-        r"^(?P<head>.+?)\s+(?P<start>\d{2}/\d{4})\s*[–-]\s*(?P<end>\d{2}/\d{4}|heute)\s*$",
-        re.IGNORECASE,
-    )
-
-    # Education başlıkları
-    edu_pattern_bar = re.compile(
-        r"(\d{2}/\d{4})\s*[–-]\s*(\d{2}/\d{4})\s*\|\s*([^|]+?)\s*\|\s*(.+)$"
-    )
-    edu_pattern_dash = re.compile(
-        r"^(?P<degree>.+?)\s+[–-]\s+(?P<inst>.+?),\s*(?P<start>\d{2}/\d{4})\s*[–-]\s*(?P<end>\d{2}/\d{4})$"
-    )
-    edu_pattern_deg_inst_comma = re.compile(
-        r"^(?P<degree>.+?),\s*(?P<inst>.+?),\s*(?P<start>\d{2}/\d{4})\s*[–-]\s*(?P<end>\d{2}/\d{4})$"
-    )
-    edu_pattern_comma = re.compile(
-        r"^(?P<degree>.+?),\s*(?P<start>\d{2}/\d{4})\s*[–-]\s*(?P<end>\d{2}/\d{4})$"
-    )
-    edu_pattern_single = re.compile(
-        r"^(?P<degree>.+?)\s+[–-]\s+(?P<inst>.+?)\s*[·,]\s*(?P<single>\d{2}/\d{4})$"
-    )
-    # İki satırlı eğitim biçimi
-    edu_pattern_header_pending = re.compile(
-        r"^(?P<degree>.+?)\s+[–-]\s+(?P<inst>.+?),\s*$"
-    )
-    edu_pattern_dates_only = re.compile(
-        r"^\s*(?P<start>\d{2}/\d{4})\s*[–-]\s*(?P<end>\d{2}/\d{4})\s*$"
-    )
-
-    # ── Çıktı biriktiriciler ──────────────────────────────────────────────────
+    # Çok kabaca experience / education bloklarını ayrıştır
     exp: List[Dict[str, Any]] = []
     edu: List[Dict[str, Any]] = []
+
+    # Deneyim ve eğitimde tarih aralıklarını (MM/YYYY - MM/YYYY) yakalayan regex
+    range_pattern = re.compile(
+        r"(?P<start>\d{2}/\d{4})\s*[-–]\s*(?P<end>\d{2}/\d{4}|heute|bis\s+heute|aktuell)",
+        re.IGNORECASE,
+    )
+    single_date_pattern = re.compile(r"(?P<single>\d{2}/\d{4})")
+
+    # Çok kaba başlık tespiti
+    exp_headers = {"berufserfahrung", "erfahrung", "praxis", "praktische erfahrung"}
+    edu_headers = {"ausbildung", "studium", "bildung", "schulausbildung"}
+
+    mode = None  # "EXP" | "EDU" | None
+    last_idx = None
     descr_buffer: List[str] = []
-    last_idx: int | None = None
 
-    # Bölüm durumu
-    sec = None            # None | "exp" | "edu"
-    pending_edu = None    # (degree, inst) iki satırlı eğitim için bekletme
+    # Education için basit pattern:
+    edu_pattern_range = re.compile(
+        r"^(?P<start>\d{2}/\d{4})\s*[-–]\s*(?P<end>\d{2}/\d{4})\s+(?P<degree>.+?),\s*(?P<inst>.+)$"
+    )
+    edu_pattern_single = re.compile(
+        r"^(?P<single>\d{2}/\d{4})\s+(?P<degree>.+?),\s*(?P<inst>.+)$"
+    )
 
-    # Bullet karakterleri (başlangıç tespiti için)
-    BULLET_RE = r"^[\u2022\u2219\u25CF\u00B7\u25E6\u2043\-\*•·●]"
-    date_pattern = re.compile(r"\d{2}/\d{4}")
-
-    skip_next = False
     for idx, ln in enumerate(lines):
-        if skip_next:
-            skip_next = False
+        lower = ln.lower()
+
+        # Skills çıkarımı
+        for tok in SKILL_TOKENS:
+            if tok in lower:
+                skills_found.append(_shorten_skill(tok))
+
+        # Başlık anahtar kelimeleri
+        if any(h in lower for h in exp_headers):
+            mode = "EXP"
+            continue
+        if any(h in lower for h in edu_headers):
+            mode = "EDU"
             continue
 
-        low = ln.lower().strip()
-
-        # Bölüm başlıklarını yakala
-        if re.match(r"^berufserfahrungen\b", low):
-            if last_idx is not None and descr_buffer:
-                exp[last_idx]["description"] = " ".join(descr_buffer).strip()
-                descr_buffer = []
-                last_idx = None
-            sec = "exp"
-            pending_edu = None
-            continue
-
-        if re.match(r"^ausbildung\b", low) or re.match(r"^ausbildung\s*&\s*weiterbildung\b", low) or re.match(r"^weiterbildung\b", low):
-            if last_idx is not None and descr_buffer:
-                exp[last_idx]["description"] = " ".join(descr_buffer).strip()
-                descr_buffer = []
-                last_idx = None
-            sec = "edu"
-            pending_edu = None
-            continue
-
-        if re.match(r"^kenntnisse\b", low) or re.match(r"^skills\b", low) or re.match(r"^fremdsprachen\b", low) or re.match(r"^über mich\b", low):
-            # Açık exp açıklamasını kapat
-            if last_idx is not None and descr_buffer:
-                exp[last_idx]["description"] = " ".join(descr_buffer).strip()
-                descr_buffer = []
-                last_idx = None
-            sec = None
-            pending_edu = None
-            continue
-
-        # ----- Experience başlıkları (yalnızca exp bölümünde veya bölüm belirtilmemişse) -----
-        matched_header = False
-        header_text = ln
-        lookahead_used = False
-
-        if sec in (None, "exp"):
-            # BWL CV'deki gibi tarih bir sonraki satırdaysa iki satırı birleştir
-            if not date_pattern.search(ln) and idx + 1 < len(lines) and date_pattern.search(lines[idx + 1]):
-                header_text = f"{ln} {lines[idx + 1].strip()}"
-                lookahead_used = True
-
-            m = exp_pattern_bar.search(header_text)
+        # EXP / EDU blokları
+        if mode == "EXP":
+            m = range_pattern.search(ln)
             if m:
-                matched_header = True
-                seit_flag = bool(m.group(1))
-                seit_my = m.group(2)
-                start_my = m.group(3)
-                end_my = m.group(4)
-                title = m.group(5).strip()
-                company = m.group(6).strip()
-            else:
-                m = exp_pattern_dash.search(header_text)
-                if m:
-                    matched_header = True
-                    seit_flag = bool(m.group("seit"))
-                    seit_my = m.group("seit")
-                    start_my = m.group("start")
-                    end_my = m.group("end")
-                    title = m.group("title").strip()
-                    company = m.group("company").strip()
-                else:
-                    m = exp_pattern_comma.search(header_text)
-                    if m:
-                        matched_header = True
-                        seit_flag = bool(m.group("seit"))
-                        seit_my = m.group("seit")
-                        start_my = m.group("start")
-                        end_my = m.group("end")
-                        title = m.group("title").strip()
-                        company = ""
-            # Generic pattern: "something ... 01/2019 – 10/2025"
-            if not matched_header:
-                m = exp_pattern_generic.search(header_text)
-                if m:
-                    matched_header = True
-                    seit_flag = False
-                    seit_my = None
-                    start_my = m.group("start")
-                    end_my = m.group("end")
-                    title = m.group("head").strip()
-                    company = ""
+                start_t = _norm_range_token(m.group("start"))
+                end_t = _norm_range_token(m.group("end"))
+                start_d = _parse_my(start_t)
+                end_d = None if "heute" in end_t.lower() else _parse_my(end_t)
 
-        if matched_header:
-            # önceki exp kaydının açıklamasını kapat
-            if last_idx is not None and descr_buffer:
-                exp[last_idx]["description"] = " ".join(descr_buffer).strip()
-                descr_buffer = []
+                # Önceki exp açıklamasını kapat
+                if last_idx is not None and descr_buffer:
+                    exp[last_idx]["description"] = " ".join(descr_buffer).strip()
+                    descr_buffer = []
 
-            # başlıktaki ön sembolleri temizle
-            title = _lstrip_symbols(title)
-
-            end_is_heute = bool(end_my and str(end_my).lower() == "heute")
-            exp.append({
-                "title": title,
-                "company": company,
-                "start": (seit_my or start_my) or None,
-                "end": None if (seit_flag or end_is_heute) else (end_my or None),
-                "description": "",
-            })
-            last_idx = len(exp) - 1
-            if lookahead_used:
-                skip_next = True  # tarihi içeren satırı tekrar işlememek için
-            continue
-
-        # Başlık değilse ve exp bölümündeysek: bullet açıklamaları
-        if sec in (None, "exp") and last_idx is not None:
-            if re.match(BULLET_RE, ln):
-                descr_buffer.append(_lstrip_symbols(ln))
+                title = ln[m.end():].strip(" -–")
+                exp.append(
+                    {
+                        "title": _lstrip_symbols(title),
+                        "company": "",
+                        "start": start_t if start_d else None,
+                        "end": end_t if end_d or end_t else None,
+                        "description": "",
+                    }
+                )
+                last_idx = len(exp) - 1
                 continue
 
-        # ----- Education (yalnızca edu bölümünde) -----
-        if sec == "edu":
-            # İki satırlı: önce header, sonra sadece tarih
-            m = edu_pattern_header_pending.search(ln)
+            # Eğer tarih yoksa, mevcut experimente açıklama gibi ekle
+            if last_idx is not None:
+                descr_buffer.append(ln)
+                continue
+
+        elif mode == "EDU":
+            m = edu_pattern_range.search(ln)
             if m:
+                start_t = _norm_range_token(m.group("start"))
+                end_t = _norm_range_token(m.group("end"))
+                start_d = _parse_my(start_t)
+                end_d = _parse_my(end_t)
                 degree = _lstrip_symbols(m.group("degree"))
                 inst = _lstrip_symbols(m.group("inst"))
-                pending_edu = (degree, inst)
-                continue
-
-            if pending_edu:
-                m = edu_pattern_dates_only.search(ln)
-                if m:
-                    degree, inst = pending_edu
-                    edu.append({
-                        "start": m.group("start"),
-                        "end": m.group("end"),
+                edu.append(
+                    {
+                        "start": start_t if start_d else None,
+                        "end": end_t if end_d else None,
                         "degree": degree,
                         "institution": inst,
                         "status": "completed",
-                    })
-                    pending_edu = None
-                    continue
-                # tarih gelmediyse tek satır desenleri denemeye izin ver
-
-            m = edu_pattern_bar.search(ln)
-            if m:
-                degree = _lstrip_symbols(m.group(3))
-                inst = _lstrip_symbols(m.group(4))
-                edu.append({
-                    "start": m.group(1),
-                    "end": m.group(2),
-                    "degree": degree,
-                    "institution": inst,
-                    "status": "completed",
-                })
-                continue
-
-            m = edu_pattern_dash.search(ln)
-            if m:
-                degree = _lstrip_symbols(m.group("degree"))
-                inst = _lstrip_symbols(m.group("inst"))
-                edu.append({
-                    "start": m.group("start"),
-                    "end": m.group("end"),
-                    "degree": degree,
-                    "institution": inst,
-                    "status": "completed",
-                })
-                continue
-
-            m = edu_pattern_deg_inst_comma.search(ln)
-            if m:
-                degree = _lstrip_symbols(m.group("degree"))
-                inst = _lstrip_symbols(m.group("inst"))
-                edu.append({
-                    "start": m.group("start"),
-                    "end": m.group("end"),
-                    "degree": degree,
-                    "institution": inst,
-                    "status": "completed",
-                })
-                continue
-
-            m = edu_pattern_comma.search(ln)
-            if m:
-                degree = _lstrip_symbols(m.group("degree"))
-                edu.append({
-                    "start": m.group("start"),
-                    "end": m.group("end"),
-                    "degree": degree,
-                    "institution": "",
-                    "status": "completed",
-                })
+                    }
+                )
                 continue
 
             m = edu_pattern_single.search(ln)
             if m:
                 degree = _lstrip_symbols(m.group("degree"))
                 inst = _lstrip_symbols(m.group("inst"))
-                edu.append({
-                    "start": m.group("single"),
-                    "end": None,
-                    "degree": degree,
-                    "institution": inst,
-                    "status": "completed",
-                })
+                edu.append(
+                    {
+                        "start": m.group("single"),
+                        "end": None,
+                        "degree": degree,
+                        "institution": inst,
+                        "status": "completed",
+                    }
+                )
                 continue
 
     # Son exp açıklamasını kapat
     if last_idx is not None and descr_buffer:
         exp[last_idx]["description"] = " ".join(descr_buffer).strip()
 
+    skills = _uniq_keep_order([_shorten_skill(s) for s in skills_found])
+
     return {"skills": skills, "experience": exp, "education": edu}
+
 
 def _ai_extract_cv_openai(raw_text: str) -> Dict[str, Any]:
     """
@@ -488,9 +369,9 @@ def _ai_extract_cv_openai(raw_text: str) -> Dict[str, Any]:
         {
           "title": "...",
           "company": "...",
-          "start": "MM/YYYY" veya null,
-          "end": "MM/YYYY" veya null,
-          "description": "kısa açıklama"
+          "start": "MM/YYYY" veya None,
+          "end": "MM/YYYY" veya None,
+          "description": "kısa açıklama",
         },
         ...
       ],
@@ -498,30 +379,20 @@ def _ai_extract_cv_openai(raw_text: str) -> Dict[str, Any]:
         {
           "degree": "...",
           "institution": "...",
-          "start": "MM/YYYY" veya null,
-          "end": "MM/YYYY" veya null,
-          "status": "completed" | "ongoing" | "unknown"
+          "start": "MM/YYYY" veya None,
+          "end": "MM/YYYY" veya None,
+          "status": "completed" | "ongoing" | "unknown",
         },
         ...
-      ]
+      ],
     }
     """
     instructions = (
         "You are a CV parser. The user provides the full text of a CV in German, "
         "Turkish or English. You MUST respond with a single JSON object only, no extra text.\n\n"
-        "JSON schema:\n"
-        "{\n"
-        '  \"skills\": [\"python\", \"django\", ...],\n'
-        '  \"experience\": [\n'
-        '    {\"title\": \"...\", \"company\": \"...\", \"start\": \"MM/YYYY\" or null, '
-        '\"end\": \"MM/YYYY\" or null, \"description\": \"...\"}\n'
-        "  ],\n"
-        '  \"education\": [\n'
-        '    {\"degree\": \"...\", \"institution\": \"...\", \"start\": \"MM/YYYY\" or null, '
-        '\"end\": \"MM/YYYY\" or null, \"status\": \"completed\" | \"ongoing\" | \"unknown\"}\n'
-        "  ]\n"
-        "}\n"
-        "Use null for missing dates."
+        "Return a JSON object with keys: skills (array of strings), experience (array of objects with fields "
+        "title, company, start, end, description), and education (array of objects with fields degree, institution, "
+        "start, end, status). Use 'MM/YYYY' strings for dates or null when missing."
     )
 
     data = _call_openai_json(
@@ -537,75 +408,127 @@ def _ai_extract_cv_openai(raw_text: str) -> Dict[str, Any]:
         "education": data.get("education") or [],
     }
 
+
 def ai_extract_cv(cv_source) -> Dict[str, Any]:
-    """CVSource.raw_text üzerinden çıkarım."""
-    return ai_extract_cv_text(cv_source.raw_text or "")
+    """
+    CVSource.raw_text üzerinden AI destekli çıkarım.
+
+    - AI_PROVIDER == 'openai' ise OpenAI tabanlı parser kullanır.
+    - Diğer durumlarda mevcut heuristik ai_extract_cv_text'e düşer.
+    """
+    raw = cv_source.raw_text or ""
+    provider = getattr(settings, "AI_PROVIDER", "stub")
+
+    if provider == "openai":
+        try:
+            return _ai_extract_cv_openai(raw)
+        except Exception:
+            logger.exception(
+                "OpenAI CV extraction failed; falling back to heuristics."
+            )
+            return ai_extract_cv_text(raw)
+    else:
+        return ai_extract_cv_text(raw)
 
 
 # ── Snapshot’ı CV tablolarına uygulama ─────────────────────────────────────────
 
-def apply_cv_snapshot(cv, output: Dict[str, Any], merge: bool = True) -> Dict[str, int]:
+def apply_cv_snapshot(cv, snapshot) -> Dict[str, int]:
     """
-    Snapshot çıktısını CV’nin Education/Experience/Skill tablolarına uygular.
-    merge=True: var olanı korur, yenileri ekler (basit eşleştirme).
+    snapshot.output içindeki bilgileri CV'nin ilişkili tablolara uygular.
+    Basit bir merging stratejisi: aynı kayıt varsa ekleme.
     """
     from cv_manager.models import Skill, Experience, Education
+
+    output = snapshot.output or {}
+    skills_data = output.get("skills") or []
+    exp_data = output.get("experience") or []
+    edu_data = output.get("education") or []
 
     added_skills = 0
     added_exp = 0
     added_edu = 0
 
+    merge = True  # ileride ayar olabilir
+
     # Skills
-    curr_skill_names = list(Skill.objects.filter(cv=cv).values_list("name", flat=True))
-    curr_skill_lower = {x.lower() for x in curr_skill_names}
-    for name in (output.get("skills") or []):
-        cname = _canonical_skill(name)
-        if merge and cname in curr_skill_lower:
+    for sk in skills_data:
+        sk_norm = (sk or "").strip()
+        if not sk_norm:
             continue
-        Skill.objects.get_or_create(cv=cv, name=cname)
+        exists = False
+        if merge:
+            exists = Skill.objects.filter(cv=cv, name__iexact=sk_norm).exists()
+        if exists:
+            continue
+
+        Skill.objects.create(cv=cv, name=sk_norm)
         added_skills += 1
 
     # Experience
-    for e in (output.get("experience") or []):
-        start_d = _parse_my(e.get("start") or "") if e.get("start") else None
-        end_d = _parse_my(e.get("end") or "") if e.get("end") else None
-        title = (e.get("title") or "").strip()
-        company = (e.get("company") or "").strip()
-        desc = (e.get("description") or "").strip()
+    for item in exp_data:
+        title = (item.get("title") or "").strip()
+        company = (item.get("company") or "").strip()
+        start_raw = item.get("start")
+        end_raw = item.get("end")
+        descr = (item.get("description") or "").strip()
+
+        start_d = _parse_my(start_raw) if start_raw else None
+        end_d = _parse_my(end_raw) if end_raw else None
+
+        if not title and not company and not descr:
+            continue
 
         exists = False
-        if merge and (title or company or start_d or end_d):
+        if merge and title and company:
             exists = Experience.objects.filter(
-                cv=cv, title=title, company=company,
-                start_date=start_d or None, end_date=end_d or None
+                cv=cv,
+                title__iexact=title,
+                company__iexact=company,
+                start_date=start_d or None,
+                end_date=end_d or None,
             ).exists()
         if exists:
             continue
 
         Experience.objects.create(
-            cv=cv, title=title, company=company,
-            start_date=start_d, end_date=end_d, description=desc
+            cv=cv,
+            title=title,
+            company=company,
+            start_date=start_d,
+            end_date=end_d,
+            description=descr,
         )
         added_exp += 1
 
     # Education
-    for ed in (output.get("education") or []):
-        start_d = _parse_my(ed.get("start") or "") if ed.get("start") else None
-        end_d = _parse_my(ed.get("end") or "") if ed.get("end") else None
-        degree = (ed.get("degree") or "").strip()
-        inst = (ed.get("institution") or "").strip()
+    for item in edu_data:
+        degree = (item.get("degree") or "").strip()
+        inst = (item.get("institution") or "").strip()
+        start_raw = item.get("start")
+        end_raw = item.get("end")
+
+        start_d = _parse_my(start_raw) if start_raw else None
+        end_d = _parse_my(end_raw) if end_raw else None
 
         exists = False
         if merge and (degree or inst or start_d or end_d):
             exists = Education.objects.filter(
-                cv=cv, degree=degree, institution=inst,
-                start_date=start_d or None, end_date=end_d or None
+                cv=cv,
+                degree=degree,
+                institution=inst,
+                start_date=start_d or None,
+                end_date=end_d or None,
             ).exists()
         if exists:
             continue
 
         Education.objects.create(
-            cv=cv, degree=degree, institution=inst, start_date=start_d, end_date=end_d
+            cv=cv,
+            degree=degree,
+            institution=inst,
+            start_date=start_d,
+            end_date=end_d,
         )
         added_edu += 1
 
