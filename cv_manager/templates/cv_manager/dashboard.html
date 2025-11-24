@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>CV Dashboard</title>
+</head>
+<body>
+  <h1>CV Dashboard</h1>
+
+  {% if cvs %}
+    <ul>
+      {% for cv in cvs %}
+        <li>
+          {{ cv.full_name }} – {{ cv.get_field_display }}
+          {% if cv.is_primary %}
+            (Primary)
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Noch keine CVs vorhanden. Lege zuerst mindestens einen CV im Admin an.</p>
+  {% endif %}
+</body>
+</html>
