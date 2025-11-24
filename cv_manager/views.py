@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 
 from .models import CV
 from .forms import CVForm
@@ -32,3 +32,21 @@ def cv_create(request):
         form = CVForm()
 
     return render(request, "cv_manager/cv_form.html", {"form": form})
+
+def cv_update(request, pk):
+    """
+    Var olan CV'yi düzenleme view'i.
+    - GET: mevcut verilerle form
+    - POST: geçerliyse kaydet ve dashboard'a dön
+    """
+    cv = get_object_or_404(CV, pk=pk)
+
+    if request.method == "POST":
+        form = CVForm(request.POST, instance=cv)
+        if form.is_valid():
+            form.save()
+            return redirect("dashboard")
+    else:
+        form = CVForm(instance=cv)
+
+    return render(request, "cv_manager/cv_form.html", {"form": form, "cv": cv})
