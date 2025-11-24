@@ -7,6 +7,10 @@
 <body>
   <h1>CV Dashboard</h1>
 
+  <p>
+    <a href="{% url 'cv_create' %}">Neuen CV anlegen</a>
+  </p>
+
   {% if cvs %}
     <ul>
       {% for cv in cvs %}
@@ -19,7 +23,7 @@
       {% endfor %}
     </ul>
   {% else %}
-    <p>Noch keine CVs vorhanden. Lege zuerst mindestens einen CV im Admin an.</p>
+    <p>Noch keine CVs vorhanden. Lege zuerst mindestens einen CV an.</p>
   {% endif %}
 </body>
 </html>
