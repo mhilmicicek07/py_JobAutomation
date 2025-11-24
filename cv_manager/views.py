@@ -1,5 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+
 from .models import CV
+from .forms import CVForm
 
 # Create your views here.
 def dashboard(request):
@@ -13,3 +15,20 @@ def dashboard(request):
         "cvs": cvs,
     }
     return render(request, "cv_manager/dashboard.html", context)
+
+def cv_create(request):
+    """
+    Yeni CV oluşturma view'i.
+    Şimdilik:
+    - GET: boş form
+    - POST: form geçerliyse kaydet ve dashboard'a yönlendir
+    """
+    if request.method == "POST":
+        form = CVForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("dashboard")
+    else:
+        form = CVForm()
+
+    return render(request, "cv_manager/cv_form.html", {"form": form})
