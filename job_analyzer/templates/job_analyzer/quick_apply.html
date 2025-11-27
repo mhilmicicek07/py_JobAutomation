@@ -23,6 +23,10 @@
 <div class="container">
   <h1>Schnellbewerbung</h1>
 
+  <p>
+    <a href="{% url 'dashboard' %}">Zurück zum CV-Dashboard</a>
+  </p>
+
   <form method="post">
     {% csrf_token %}
     {% if form.non_field_errors %}
