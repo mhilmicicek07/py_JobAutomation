@@ -82,7 +82,7 @@ def quick_apply(request):
                 ]
             )
 
-            cv_sections: Dict[str, str] = {}
+            cv_sections: Dict[str, Any] = {}
             cover_letter = ""
             draft: ApplicationDraft | None = None
 
@@ -101,17 +101,34 @@ def quick_apply(request):
                     },
                 )
 
+            # 5) Template için sıralı section listesi (sadece düz metin olanlar)
             section_labels = {
                 "profil": "Profil / Zusammenfassung",
                 "kenntnisse": "Fachliche Stärken & Kenntnisse",
                 "erfahrung": "Berufserfahrung (ATS-Text)",
                 "ausbildung": "Ausbildung / Studium",
                 "hinweise": "Hinweise / Rahmenbedingungen",
-                "diagnostik": "Diagnostik / Meta",
             }
             sections = []
-            for key in ["profil", "kenntnisse", "erfahrung", "ausbildung", "hinweise", "diagnostik"]:
-                text = (cv_sections or {}).get(key, "").strip()
+
+            for key in ["profil", "kenntnisse", "erfahrung", "ausbildung", "hinweise"]:
+                value = (cv_sections or {}).get(key)
+                if not isinstance(value, str):
+                    continue
+
+                text = value.strip()
+
+                # Basit tekrar temizliği özellikle Erfahrung / Ausbildung için
+                if key in {"erfahrung", "ausbildung"}:
+                    lines = [ln.rstrip() for ln in text.splitlines()]
+                    seen = set()
+                    deduped = []
+                    for ln in lines:
+                        if ln and ln not in seen:
+                            seen.add(ln)
+                            deduped.append(ln)
+                    text = "\n".join(deduped).strip()
+
                 if text:
                     sections.append(
                         {
