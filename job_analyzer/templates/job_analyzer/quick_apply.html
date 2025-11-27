@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>JobAutomation – Schnellbewerbung</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 2rem; background: #f5f5f5; }
+    .container { max-width: 960px; margin: 0 auto; background: #fff; padding: 1.5rem 2rem; border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,0.05); }
+    textarea { width: 100%; }
+    .result-block { margin-top: 2rem; padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; }
+    .pill { display: inline-block; padding: 0.2rem 0.7rem; border-radius: 999px; border: 1px solid #ccc; font-size: 0.85rem; margin-right: 0.25rem; margin-bottom: 0.25rem; }
+    .tag-APPLY { background: #e6ffed; border-color: #34a853; }
+    .tag-REVIEW { background: #fff8e1; border-color: #fbbc05; }
+    .tag-SKIP { background: #ffebee; border-color: #ea4335; }
+    .muted { color: #666; font-size: 0.9rem; }
+    .field-errors { color: #b00020; margin-bottom: 1rem; }
+    .btn { padding: 0.6rem 1.2rem; border-radius: 4px; border: none; background: #2563eb; color: #fff; cursor: pointer; }
+    .btn:hover { background: #1d4ed8; }
+    .section { margin-top: 1.5rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Schnellbewerbung</h1>
+
+  <form method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="field-errors">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <div>
+      {{ form.target_field.label_tag }}
+      {{ form.target_field }}
+      {% if form.target_field.errors %}
+        <div class="field-errors">{{ form.target_field.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div style="margin-top: 1rem;">
+      {{ form.raw_text.label_tag }}
+      {{ form.raw_text }}
+      {% if form.raw_text.help_text %}
+        <div class="muted">{{ form.raw_text.help_text }}</div>
+      {% endif %}
+      {% if form.raw_text.errors %}
+        <div class="field-errors">{{ form.raw_text.errors }}</div>
+      {% endif %}
+    </div>
+
+    <div style="margin-top: 1.5rem;">
+      <button type="submit" class="btn">Analysieren &amp; Anschreiben erzeugen</button>
+    </div>
+  </form>
+
+  {% if result %}
+    <div class="result-block">
+      <h2>Ergebnis</h2>
+      <p>
+        {% if result.cv %}
+          CV: <strong>{{ result.cv.full_name }}</strong>
+          (Fokus: {{ result.cv.get_field_display }})<br>
+        {% else %}
+          <span class="field-errors">
+            Hinweis: Für dieses Zielgebiet ist noch kein CV im System. Es konnte kein persönliches Anschreiben erzeugt werden.
+          </span><br>
+        {% endif %}
+        Score:
+        {% if result.match_score is not None %}
+          <strong>{{ result.match_score }} / 100</strong>
+        {% else %}
+          <span class="muted">nicht berechnet</span>
+        {% endif %}
+        –
+        Entscheidung:
+        <span class="pill tag-{{ result.decision }}">
+          {{ result.decision }}
+        </span>
+      </p>
+
+      <h3>Erkannte Skills</h3>
+      {% if result.skills %}
+        <p>
+          {% for s in result.skills %}
+            <span class="pill">{{ s }}</span>
+          {% endfor %}
+        </p>
+      {% else %}
+        <p class="muted">Keine Skills erkannt.</p>
+      {% endif %}
+
+      {% if result.cover_letter %}
+        <div class="section">
+          <h3>Anschreiben (DE)</h3>
+          <textarea rows="16" readonly>{{ result.cover_letter }}</textarea>
+        </div>
+      {% endif %}
+
+      {% if result.sections %}
+        <div class="section">
+          <h3>CV-Sektionen (ATS-Text)</h3>
+          {% for s in result.sections %}
+            <h4>{{ s.label }}</h4>
+            <textarea rows="8" readonly>{{ s.text }}</textarea>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+</body>
+</html>
