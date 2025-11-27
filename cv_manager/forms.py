@@ -1,17 +1,9 @@
 from django import forms
+
 from .models import CV
 
 
 class CVForm(forms.ModelForm):
-    """
-    Basit CV formu.
-    Şimdilik sadece temel alanlar:
-    - isim
-    - alan (GEN / BWL / WEB)
-    - primary flag
-    - iletişim bilgileri
-    """
-
     class Meta:
         model = CV
         fields = [
@@ -23,3 +15,16 @@ class CVForm(forms.ModelForm):
             "address",
             "github",
         ]
+
+
+class CVImportForm(forms.Form):
+    raw_text = forms.CharField(
+        label="CV-Text (vollständig)",
+        widget=forms.Textarea(attrs={"rows": 20}),
+        help_text="Gesamten CV-Text aus PDF/Word hier einfügen.",
+    )
+    note = forms.CharField(
+        label="Notiz",
+        max_length=120,
+        required=False,
+    )

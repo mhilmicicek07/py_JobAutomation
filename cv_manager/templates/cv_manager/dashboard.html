@@ -12,18 +12,19 @@
   </p>
 
   {% if cvs %}
-    <ul>
-      {% for cv in cvs %}
-        <li>
-          {{ cv.full_name }} – {{ cv.get_field_display }}
-          {% if cv.is_primary %}
-            (Primary)
-          {% endif %}
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>Noch keine CVs vorhanden. Lege zuerst mindestens einen CV an.</p>
-  {% endif %}
+  <ul>
+    {% for cv in cvs %}
+      <li>
+        {{ cv.full_name }} – {{ cv.get_field_display }}
+        {% if cv.is_primary %}(Primary){% endif %}
+        |
+        <a href="{% url 'cv_update' cv.pk %}">Bearbeiten</a> |
+        <a href="{% url 'cv_import' cv.pk %}">AI-Import</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>Noch keine CVs vorhanden. Lege zuerst mindestens einen CV an.</p>
+{% endif %}
 </body>
 </html>
