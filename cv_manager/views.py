@@ -88,3 +88,17 @@ def cv_import(request, pk):
         "cv_manager/cv_import.html",
         {"form": form, "cv": cv},
     )
+
+def cv_delete(request,pk):
+    cv = get_object_or_404(CV, pk=pk)
+
+    if request.method == "POST":
+        cv.delete()
+        messages.success(request, "CV erfolgreich gelöscht.")
+        return redirect("dashboard")
+    
+    return render(
+        request,
+        "cv_manager/cv_delete_confirm.html",
+        { "cv": cv},
+    )
