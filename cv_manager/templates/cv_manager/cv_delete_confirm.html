@@ -1,0 +1,11 @@
+<h2>CV Löschen</h2>
+<p>Möchtest du den CV "<strong>{{ cv.full_name }}</strong>" wirklich löschen?</p>
+
+<form method="POST">
+    {% csrf_token %}
+    <button type="submit" style= "background: red; color: white; padding: 8px 16px; border:none; border-radius: 4px;">
+        Ja, löschen
+    </button>
+
+    <a href="{% url "dashboard" %}" style="margin-left:10px;">Abbrechen</a>
+</form>
