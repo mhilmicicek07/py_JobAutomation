@@ -21,6 +21,7 @@
         |
         <a href="{% url 'cv_update' cv.pk %}">Bearbeiten</a> |
         <a href="{% url 'cv_import' cv.pk %}">AI-Import</a>
+        <a href="{% url 'cv_delete' cv.pk %}" style="color: red;">Löschen</a>
       </li>
     {% endfor %}
   </ul>
