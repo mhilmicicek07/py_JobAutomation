@@ -3,13 +3,51 @@
 {% block title %}Schnellbewerbung{% endblock %}
 
 {% block content %}
-<h1>Schnellbewerbung – Job Analyse</h1>
+<h1>Schnellbewerbung</h1>
 
-<form method="POST">
-    {% csrf_token %}
-    {{ form.as_p }}
+<div class="card" style="padding: 20px; margin-bottom: 25px;">
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
 
-    <button type="submit">Analysieren</button>
-</form>
+        <button type="submit" class="btn btn-primary">Analysieren & Anschreiben erzeugen</button>
+    </form>
+</div>
+
+{% if result %}
+    <hr>
+
+    <h2>Ergebnis</h2>
+
+    <!-- Score -->
+    <div class="card" style="padding: 15px; margin-bottom: 20px;">
+        <h3>CV: {{ result.cv.full_name }} (Fokus: {{ result.cv.get_field_display }})</h3>
+        <p><strong>Score:</strong> {{ result.score }} / 100 – <strong>Entscheidung:</strong> {{ result.decision }}</p>
+    </div>
+
+    <!-- Skills -->
+    {% if result.skills %}
+    <div class="card" style="padding: 15px; margin-bottom: 20px;">
+        <h3>Erkannte Skills</h3>
+        <p>{{ result.skills|join:", " }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Anschreiben -->
+    {% if result.cover_letter %}
+    <div class="card" style="padding: 15px; margin-bottom: 20px;">
+        <h3>Anschreiben (DE)</h3>
+        <pre style="white-space: pre-wrap;">{{ result.cover_letter }}</pre>
+    </div>
+    {% endif %}
+
+    <!-- ATS CV Text -->
+    {% if result.ats_text %}
+    <div class="card" style="padding: 15px;">
+        <h3>CV-Sektionen (ATS-Text)</h3>
+        <pre style="white-space: pre-wrap;">{{ result.ats_text }}</pre>
+    </div>
+    {% endif %}
+{% endif %}
 
 {% endblock %}
