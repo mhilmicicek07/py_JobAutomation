@@ -1,21 +1,15 @@
-<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <title>Neuen CV anlegen</title>
-</head>
-<body>
-  <h1>Neuen CV anlegen</h1>
+{% extends "base.html" %}
 
-  <form method="post">
+{% block title %}CV bearbeiten{% endblock %}
+
+{% block content %}
+<h1>CV bearbeiten / erstellen</h1>
+
+<form method="POST">
     {% csrf_token %}
     {{ form.as_p }}
 
     <button type="submit">Speichern</button>
-  </form>
-
-  <p>
-    <a href="{% url 'dashboard' %}">Zurück zur Übersicht</a>
-  </p>
-</body>
-</html>
+    <a href="{% url 'dashboard' %}">Abbrechen</a>
+</form>
+{% endblock %}
