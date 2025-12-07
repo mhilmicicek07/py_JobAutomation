@@ -1,26 +1,15 @@
-<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <title>CV importieren – {{ cv.full_name }}</title>
-</head>
-<body>
-  <h1>CV importieren – {{ cv.full_name }}</h1>
+{% extends "base.html" %}
 
-  <p>
-    CV-Text (z. B. aus PDF/Word) komplett einfügen. Das System erzeugt daraus
-    Skills, Berufserfahrung und Ausbildungseinträge.
-  </p>
+{% block title %}CV AI-Import{% endblock %}
 
-  <form method="post">
+{% block content %}
+<h1>AI-Import für {{ cv.full_name }}</h1>
+
+<form method="POST">
     {% csrf_token %}
     {{ form.as_p }}
 
-    <button type="submit">AI-Import starten</button>
-  </form>
-
-  <p>
-    <a href="{% url 'dashboard' %}">Zurück zur Übersicht</a>
-  </p>
-</body>
-</html>
+    <button type="submit">Import starten</button>
+    <a href="{% url 'dashboard' %}">Abbrechen</a>
+</form>
+{% endblock %}
