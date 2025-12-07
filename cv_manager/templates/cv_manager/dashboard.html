@@ -1,32 +1,29 @@
-<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <title>CV Dashboard</title>
-</head>
-<body>
-  <h1>CV Dashboard</h1>
+{% extends "base.html" %}
 
-  <p>
+{% block title %}CV Dashboard{% endblock %}
+
+{% block content %}
+<h1>CV Dashboard</h1>
+
+<p>
     <a href="{% url 'cv_create' %}">Neuen CV anlegen</a>
     <a href="{% url 'quick_apply' %}">Schnellbewerbung (Job-Analyse)</a>
-  </p>
+</p>
 
-  {% if cvs %}
-  <ul>
+{% if cvs %}
+<ul>
     {% for cv in cvs %}
       <li>
         {{ cv.full_name }} – {{ cv.get_field_display }}
         {% if cv.is_primary %}(Primary){% endif %}
         |
         <a href="{% url 'cv_update' cv.pk %}">Bearbeiten</a> |
-        <a href="{% url 'cv_import' cv.pk %}">AI-Import</a>
+        <a href="{% url 'cv_import' cv.pk %}">AI-Import</a> |
         <a href="{% url 'cv_delete' cv.pk %}" style="color: red;">Löschen</a>
       </li>
     {% endfor %}
-  </ul>
+</ul>
 {% else %}
   <p>Noch keine CVs vorhanden. Lege zuerst mindestens einen CV an.</p>
 {% endif %}
-</body>
-</html>
+{% endblock %}
