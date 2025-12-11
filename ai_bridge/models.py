@@ -1,8 +1,44 @@
 from django.db import models
+from django.contrib.auth.models import User
 from cv_manager.models import CV
 from job_analyzer.models import JobPosting
 
-# Create your models here.
+# ── KULLANICI AYARLARI (YENİ) ─────────────────────────────────────────────────
+
+class UserAISettings(models.Model):
+    PROVIDER_CHOICES = [
+        ("openai", "OpenAI (GPT-4o, etc.)"),
+        ("gemini", "Google Gemini"),
+        ("groq", "Groq (Llama3, Mixtral)"),
+    ]
+
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name="ai_settings"
+    )
+    provider = models.CharField(
+        max_length=20, 
+        choices=PROVIDER_CHOICES, 
+        default="openai",
+        help_text="Kullanmak istediğiniz AI sağlayıcısı."
+    )
+    api_key = models.CharField(
+        max_length=255, 
+        blank=True, 
+        help_text="Seçilen sağlayıcıya ait API Anahtarı (sk-..., AIza... vb.)"
+    )
+    model_name = models.CharField(
+        max_length=50, 
+        blank=True, 
+        help_text="Özel model adı (Boş bırakılırsa varsayılan kullanılır. Örn: gpt-4o-mini)"
+    )
+
+    def __str__(self):
+        return f"{self.user.username} - {self.provider}"
+
+
+# ── MEVCUT MODELLER ───────────────────────────────────────────────────────────
 
 class ExtractionSnapshot(models.Model):
     KIND_CHOICES = [
@@ -41,18 +77,16 @@ class ExtractionSnapshot(models.Model):
         ref = self.posting_id or self.cv_id or "-" # type: ignore
         return f"{self.kind} snapshot #{self.id} for {ref}" # type: ignore
 
+
 class CVSource(models.Model):
     """
     Ham CV metni (PDF’ten kopyalanmış düz metin olabilir).
     Aynı CV’ye birden fazla varyasyon eklenebilir.
     """
     cv = models.ForeignKey(CV, on_delete=models.CASCADE, related_name="sources")
-    raw_text = models.TextField()
-    note = models.CharField(max_length=120, blank=True)  # örn: "IT CV v1", "BWL CV v2"
+    raw_text = models.TextField(help_text="CV içeriğini buraya yapıştırın.")
+    note = models.CharField(max_length=100, blank=True, help_text="Örn: LinkedIn versiyonu")
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        ordering = ["-created_at"]
-
-    def __str__(self) -> str:
-        return f"CVSource #{self.id} for CV {self.cv_id}" # type: ignore
+    def __str__(self):
+        return f"Source for {self.cv} ({self.created_at.date()})"
