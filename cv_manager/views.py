@@ -1,24 +1,32 @@
 from types import SimpleNamespace
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required # EKLENDİ
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import CV
 from .forms import CVForm, CVImportForm
 from ai_bridge.models import CVSource
 from ai_bridge import services as ai_services
 
-@login_required # EKLENDİ (AI kullanmak için giriş şart)
+@login_required
 def dashboard(request):
-    # Sadece kendi CV'lerini görsün istersek filter(user=request.user) eklenmeli (İleride)
-    cvs = CV.objects.all().order_by("full_name", "field")
+    """
+    Kullanıcının kendi CV'lerini listeler.
+    """
+    # SADECE giriş yapan kullanıcının CV'leri (user=request.user)
+    cvs = CV.objects.filter(user=request.user).order_by("full_name", "field")
     return render(request, "cv_manager/dashboard.html", {"cvs": cvs})
 
 @login_required
 def cv_create(request):
+    """
+    Yeni CV oluşturur ve sahibini (user) giriş yapan kişi yapar.
+    """
     if request.method == "POST":
         form = CVForm(request.POST)
         if form.is_valid():
-            form.save()
+            cv = form.save(commit=False) # Veritabanına henüz yazma
+            cv.user = request.user       # Sahibini ata
+            cv.save()                    # Şimdi yaz
             return redirect("dashboard")
     else:
         form = CVForm()
@@ -26,7 +34,12 @@ def cv_create(request):
 
 @login_required
 def cv_update(request, pk):
-    cv = get_object_or_404(CV, pk=pk)
+    """
+    Mevcut CV'yi günceller.
+    Başkasının CV'sine erişimi engellemek için user=request.user şartı var.
+    """
+    cv = get_object_or_404(CV, pk=pk, user=request.user)
+    
     if request.method == "POST":
         form = CVForm(request.POST, instance=cv)
         if form.is_valid():
@@ -38,7 +51,10 @@ def cv_update(request, pk):
 
 @login_required
 def cv_import(request, pk):
-    cv = get_object_or_404(CV, pk=pk)
+    """
+    CV metnini AI ile analiz eder ve veritabanına ekler.
+    """
+    cv = get_object_or_404(CV, pk=pk, user=request.user)
 
     if request.method == "POST":
         form = CVImportForm(request.POST)
@@ -52,9 +68,10 @@ def cv_import(request, pk):
                 note=note,
             )
 
-            # DEĞİŞİKLİK BURADA: request.user parametresini ekledik
+            # AI Servisini çağır (Kullanıcı context'i ile)
             data = ai_services.ai_extract_cv(source, user=request.user)
 
+            # Gelen veriyi (JSON) veritabanına uygula (Skill, Experience vb.)
             snapshot = SimpleNamespace(output=data)
             stats = ai_services.apply_cv_snapshot(cv, snapshot)
 
@@ -73,7 +90,11 @@ def cv_import(request, pk):
 
 @login_required
 def cv_delete(request, pk):
-    cv = get_object_or_404(CV, pk=pk)
+    """
+    CV'yi siler.
+    """
+    cv = get_object_or_404(CV, pk=pk, user=request.user)
+    
     if request.method == "POST":
         cv.delete()
         messages.success(request, f"CV '{cv.full_name}' silindi.")
