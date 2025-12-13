@@ -75,8 +75,8 @@ def quick_apply(request):
             posting.save()
 
             # 3. Ön Yazı (Cover Letter) & Taslak
-            # NOT: build_cover_letter henüz 'user' parametresi almıyor (Sonraki adımda düzelteceğiz)
-            cover_letter = letter_services.build_cover_letter(cv, posting)
+            # GÜNCELLEME: user=request.user parametresini buraya ekledik
+            cover_letter = letter_services.build_cover_letter(cv, posting, user=request.user)
 
             draft, _ = ApplicationDraft.objects.update_or_create(
                 posting=posting,
