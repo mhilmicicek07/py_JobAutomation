@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}AI Ayarları{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+    <h1>AI Konfigürasyonu</h1>
+    <p class="text-muted">Kullanmak istediğiniz yapay zeka sağlayıcısını seçin.</p>
+
+    <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <form method="post">
+            {% csrf_token %}
+            
+            {% for field in form %}
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                <small style="color: #666; display: block; margin-top: 5px;">{{ field.help_text }}</small>
+                {% endif %}
+                {% if field.errors %}
+                <div style="color: red; font-size: 0.9em;">{{ field.errors }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <div style="margin-top: 20px; text-align: right;">
+                <button type="submit" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+                    Ayarları Kaydet
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div style="margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 6px;">
+        <strong>Bilgi:</strong>
+        <ul style="margin: 0; padding-left: 20px; font-size: 0.9em; color: #555;">
+            <li><strong>OpenAI:</strong> En kararlı sonuçlar (GPT-4o-mini önerilir).</li>
+            <li><strong>Gemini:</strong> Google API anahtarı gerektirir.</li>
+            <li><strong>Groq:</strong> Çok hızlıdır, açık kaynak modelleri (Llama3) kullanır.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -4,4 +4,6 @@ from .views import *
 
 urlpatterns = [
     path("quick-apply/", quick_apply, name="quick_apply"),
+    path("history/", application_history, name="application_history"),
+    path("history/<int:pk>/", application_detail, name="application_detail"),
 ]

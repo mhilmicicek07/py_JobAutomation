@@ -6,34 +6,62 @@
 
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 30px;
-            background: #f7f7f7;
-        }
-        .container {
-            background: white;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-        }
-        nav a {
-            margin-right: 15px;
-            text-decoration: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background: #f0f2f5;
+            color: #333;
         }
         nav {
-            margin-bottom: 25px;
-            display: block;
+            background: #343a40;
+            padding: 15px 30px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+        }
+        nav a {
+            color: #ecf0f1;
+            text-decoration: none;
+            margin-right: 25px;
+            font-weight: 500;
+            font-size: 16px;
+        }
+        nav a:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+        nav .brand {
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            margin-right: 40px;
+        }
+        .container {
+            padding: 0 30px 40px 30px;
         }
     </style>
 </head>
 <body>
 
 <nav>
+    <div class="brand">JobAutomation</div>
     <a href="{% url 'dashboard' %}">CVs</a>
     <a href="{% url 'quick_apply' %}">Schnellbewerbung</a>
+    <a href="{% url 'application_history' %}">Historie</a> <a href="{% url 'ai_settings' %}" style="margin-left: auto; color: #adb5bd; font-size: 14px;">⚙ Einstellungen</a>
 </nav>
 
 <div class="container">
+    {% if messages %}
+        <div style="margin-bottom: 20px;">
+        {% for message in messages %}
+            <div style="padding: 10px 15px; border-radius: 4px; margin-bottom: 10px; 
+                {% if message.tags == 'success' %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;{% endif %}
+                {% if message.tags == 'error' %}background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+        </div>
+    {% endif %}
+
     {% block content %}
     {% endblock %}
 </div>

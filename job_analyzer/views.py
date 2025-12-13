@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from django import forms
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 
@@ -34,6 +34,59 @@ class QuickApplyForm(forms.Form):
 
 
 @login_required
+def application_history(request):
+    """Geçmiş başvuruları listeler."""
+    drafts = ApplicationDraft.objects.select_related("cv", "posting").order_by("-created_at")
+    return render(request, "job_analyzer/history.html", {"drafts": drafts})
+
+
+@login_required
+def application_detail(request, pk):
+    """Geçmiş bir başvurunun detayını gösterir."""
+    draft = get_object_or_404(ApplicationDraft, pk=pk)
+    # Sonuçları quick_apply template yapısına uygun hazırlayalım
+    result = {
+        "posting": draft.posting,
+        "cv": draft.cv,
+        "skills": draft.posting.extracted_skills,
+        "match_score": draft.posting.match_score,
+        "score": draft.posting.match_score, # Template uyumu için
+        "decision": draft.posting.decision,
+        "cover_letter": draft.cover_letter,
+        "draft": draft,
+    }
+    
+    # Sections (Profil, Deneyim vb.) dict ise listeye çevir
+    sections = []
+    if isinstance(draft.cv_sections, dict):
+        section_labels = {
+            "profil": "Profil",
+            "kenntnisse": "Kenntnisse",
+            "erfahrung": "Berufserfahrung",
+            "ausbildung": "Ausbildung",
+            "hinweise": "Sonstiges / Hinweise",
+        }
+        for key, value in draft.cv_sections.items():
+            if key == "diagnostik" or not isinstance(value, str):
+                continue
+            if value.strip():
+                sections.append({
+                    "key": key,
+                    "label": section_labels.get(key, key.title()),
+                    "text": value.strip()
+                })
+    
+    result["sections"] = sections
+
+    # Formu göstermeye gerek yok, sadece sonucu gösteriyoruz
+    return render(request, "job_analyzer/quick_apply.html", {
+        "form": QuickApplyForm(), # Boş form, hata vermemesi için
+        "result": result,
+        "readonly": True # Template'de 'Analiz' butonunu gizlemek için kullanılabilir
+    })
+
+
+@login_required
 @require_http_methods(["GET", "POST"])
 def quick_apply(request):
     result: Dict[str, Any] | None = None
@@ -53,14 +106,12 @@ def quick_apply(request):
             # 2. AI veya Heuristik Analiz
             data = ai_services.ai_extract_posting(posting, user=request.user)
 
-            # AI başarısız olduysa veya boş döndüyse fallback (heuristik)
             if not data.get("skills") and not data.get("experience"):
                 data = ja_services.extract_requirements(raw_text, target_field)
 
             skills = data.get("skills") or []
             experience = data.get("experience") or []
 
-            # Sonuçları kaydet
             posting.extracted_skills = skills
             posting.extracted_experience = experience
             
@@ -73,8 +124,7 @@ def quick_apply(request):
             posting.decision = decision
             posting.save()
 
-            # 3. Ön Yazı (Cover Letter) & Taslak
-            # GÜNCELLEME: user=request.user parametresi EKLENDİ
+            # 3. Ön Yazı & Taslak
             cover_letter = letter_services.build_cover_letter(cv, posting, user=request.user)
 
             draft, _ = ApplicationDraft.objects.update_or_create(
@@ -87,7 +137,7 @@ def quick_apply(request):
                 }
             )
 
-            # 4. Sonuç Hazırlığı (Template için)
+            # 4. Sonuç Hazırlığı
             section_labels = {
                 "profil": "Profil",
                 "kenntnisse": "Kenntnisse",
@@ -103,8 +153,6 @@ def quick_apply(request):
                         continue
 
                     text = value.strip()
-
-                    # Basit tekrar temizliği özellikle Erfahrung / Ausbildung için
                     if key in {"erfahrung", "ausbildung"}:
                         lines = [ln.rstrip() for ln in text.splitlines()]
                         seen = set()
@@ -116,13 +164,11 @@ def quick_apply(request):
                         text = "\n".join(deduped).strip()
 
                     if text:
-                        sections.append(
-                            {
-                                "key": key,
-                                "label": section_labels.get(key, key.title()),
-                                "text": text,
-                            }
-                        )
+                        sections.append({
+                            "key": key,
+                            "label": section_labels.get(key, key.title()),
+                            "text": text,
+                        })
 
             result = {
                 "posting": posting,
@@ -130,6 +176,7 @@ def quick_apply(request):
                 "skills": skills,
                 "experience": experience,
                 "match_score": score,
+                "score": score,  # DÜZELTME: Template {{ result.score }} bekliyor
                 "decision": decision,
                 "sections": sections,
                 "cover_letter": cover_letter,
