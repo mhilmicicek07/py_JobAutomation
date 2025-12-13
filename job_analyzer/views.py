@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 
 from django import forms
 from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 
 from .models import JobPosting
@@ -32,6 +33,7 @@ class QuickApplyForm(forms.Form):
     )
 
 
+@login_required
 @require_http_methods(["GET", "POST"])
 def quick_apply(request):
     result: Dict[str, Any] | None = None
@@ -42,101 +44,86 @@ def quick_apply(request):
             raw_text = form.cleaned_data["raw_text"]
             target_field = form.cleaned_data["target_field"]
 
-            # 1) JobPosting kaydı
+            # 1. İlanı kaydet
             posting = JobPosting.objects.create(
                 raw_text=raw_text,
-                target_field=target_field,
+                target_field=target_field
             )
 
-            # 2) AI ile ilan gereksinimlerini çıkar
-            try:
-                ai_data = ai_services.ai_extract_posting(posting)
-                skills: List[str] = ai_data.get("skills") or []
-                experience = ai_data.get("experience") or []
-            except Exception:
-                data = ja_services.extract_requirements(raw_text, target_field)
-                skills = data.get("skills", [])
-                experience = data.get("experience", [])
+            # 2. AI veya Heuristik Analiz
+            # GÜNCELLEME: request.user parametresi eklendi
+            data = ai_services.ai_extract_posting(posting, user=request.user)
 
+            # AI başarısız olduysa veya boş döndüyse fallback (heuristik)
+            if not data.get("skills") and not data.get("experience"):
+                data = ja_services.extract_requirements(raw_text, target_field)
+
+            skills = data.get("skills") or []
+            experience = data.get("experience") or []
+
+            # Sonuçları kaydet
             posting.extracted_skills = skills
             posting.extracted_experience = experience
-
-            # 3) Uygun CV’yi seç, skor ve karar üret
+            
+            # Skorlama
             cv = ja_services.get_primary_cv_or_fallback(target_field)
-            if cv:
-                score = ja_services.score_posting_against_cv(cv, skills)
-                decision = ja_services.decision_from_score(score)
-            else:
-                score = None
-                decision = "REVIEW"
+            score = ja_services.score_posting_against_cv(cv, skills)
+            decision = ja_services.decision_from_score(score)
 
             posting.match_score = score
             posting.decision = decision
-            posting.save(
-                update_fields=[
-                    "extracted_skills",
-                    "extracted_experience",
-                    "match_score",
-                    "decision",
-                    "updated_at",
-                ]
+            posting.save()
+
+            # 3. Ön Yazı (Cover Letter) & Taslak
+            # NOT: build_cover_letter henüz 'user' parametresi almıyor (Sonraki adımda düzelteceğiz)
+            cover_letter = letter_services.build_cover_letter(cv, posting)
+
+            draft, _ = ApplicationDraft.objects.update_or_create(
+                posting=posting,
+                cv=cv,
+                defaults={
+                    "cover_letter": cover_letter,
+                    "cv_sections": letter_services.build_cv_sections(cv, posting),
+                    "language": "de"
+                }
             )
 
-            cv_sections: Dict[str, Any] = {}
-            cover_letter = ""
-            draft: ApplicationDraft | None = None
-
-            # 4) CV bölümleri + Anschreiben
-            if cv:
-                cv_sections = letter_services.build_cv_sections(cv, posting)
-                cover_letter = letter_services.build_cover_letter(cv, posting)
-
-                draft, _ = ApplicationDraft.objects.update_or_create(
-                    posting=posting,
-                    cv=cv,
-                    defaults={
-                        "cv_sections": cv_sections,
-                        "cover_letter": cover_letter,
-                        "language": "de",
-                    },
-                )
-
-            # 5) Template için sıralı section listesi (sadece düz metin olanlar)
+            # 4. Sonuç Hazırlığı (Template için)
             section_labels = {
-                "profil": "Profil / Zusammenfassung",
-                "kenntnisse": "Fachliche Stärken & Kenntnisse",
-                "erfahrung": "Berufserfahrung (ATS-Text)",
-                "ausbildung": "Ausbildung / Studium",
-                "hinweise": "Hinweise / Rahmenbedingungen",
+                "profil": "Profil",
+                "kenntnisse": "Kenntnisse",
+                "erfahrung": "Berufserfahrung",
+                "ausbildung": "Ausbildung",
+                "hinweise": "Sonstiges / Hinweise",
             }
+
             sections = []
+            if isinstance(draft.cv_sections, dict):
+                for key, value in draft.cv_sections.items():
+                    if key == "diagnostik" or not isinstance(value, str):
+                        continue
 
-            for key in ["profil", "kenntnisse", "erfahrung", "ausbildung", "hinweise"]:
-                value = (cv_sections or {}).get(key)
-                if not isinstance(value, str):
-                    continue
+                    text = value.strip()
 
-                text = value.strip()
+                    # Basit tekrar temizliği özellikle Erfahrung / Ausbildung için
+                    if key in {"erfahrung", "ausbildung"}:
+                        lines = [ln.rstrip() for ln in text.splitlines()]
+                        seen = set()
+                        deduped = []
+                        for ln in lines:
+                            if ln and ln not in seen:
+                                seen.add(ln)
+                                deduped.append(ln)
+                        text = "\n".join(deduped).strip()
 
-                # Basit tekrar temizliği özellikle Erfahrung / Ausbildung için
-                if key in {"erfahrung", "ausbildung"}:
-                    lines = [ln.rstrip() for ln in text.splitlines()]
-                    seen = set()
-                    deduped = []
-                    for ln in lines:
-                        if ln and ln not in seen:
-                            seen.add(ln)
-                            deduped.append(ln)
-                    text = "\n".join(deduped).strip()
-
-                if text:
-                    sections.append(
-                        {
-                            "key": key,
-                            "label": section_labels.get(key, key.title()),
-                            "text": text,
-                        }
-                    )
+                    if text:
+                        sections.append(
+                            {
+                                "key": key,
+                                "label": section_labels.get(key, key.title()),
+                                "text": text,
+                            }
+                        )
 
             result = {
                 "posting": posting,
