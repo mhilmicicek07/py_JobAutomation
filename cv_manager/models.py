@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 # Create your models here.
 
@@ -9,6 +10,9 @@ FIELD_CHOICES = [
 ]
 
 class CV(models.Model):
+    # EKLENEN KISIM: Her CV bir kullanıcıya aittir
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="cvs", null=True, blank=True)
+    
     full_name = models.CharField(max_length=120)
     field = models.CharField(max_length=3, choices=FIELD_CHOICES, default="GEN")
     is_primary = models.BooleanField(default=False, help_text="Bu alan için ana/master CV")
@@ -114,7 +118,7 @@ class Process(models.Model):
         ordering = ["type"]
 
     def __str__(self):
-        return f"{self.get_type_display()} ({self.status})"
+        return f"{self.get_type_display()} ({self.status})" # type: ignore
 
     @property
     def months_since_start(self):
