@@ -44,7 +44,7 @@ def create_application_drafts(modeladmin, request, queryset):
     for obj in queryset:
         cv = services.get_primary_cv_or_fallback(obj.target_field)
         
-        # GÜNCELLEME: user=request.user parametresi eklendi
+        # GÜNCELLEME: user=request.user parametresi EKLENDİ
         # (Admin kullanıcısının API key'i kullanılacak)
         cover_letter = letter_services.build_cover_letter(cv, obj, user=request.user)
         

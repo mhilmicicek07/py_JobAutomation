@@ -51,7 +51,6 @@ def quick_apply(request):
             )
 
             # 2. AI veya Heuristik Analiz
-            # GÜNCELLEME: request.user parametresi eklendi
             data = ai_services.ai_extract_posting(posting, user=request.user)
 
             # AI başarısız olduysa veya boş döndüyse fallback (heuristik)
@@ -75,7 +74,7 @@ def quick_apply(request):
             posting.save()
 
             # 3. Ön Yazı (Cover Letter) & Taslak
-            # GÜNCELLEME: user=request.user parametresini buraya ekledik
+            # GÜNCELLEME: user=request.user parametresi EKLENDİ
             cover_letter = letter_services.build_cover_letter(cv, posting, user=request.user)
 
             draft, _ = ApplicationDraft.objects.update_or_create(
