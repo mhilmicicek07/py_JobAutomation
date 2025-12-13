@@ -1,29 +1,70 @@
 {% extends "base.html" %}
 
-{% block title %}CV Dashboard{% endblock %}
+{% block title %}Meine CVs{% endblock %}
 
 {% block content %}
-<h1>CV Dashboard</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0 text-gray-800">Meine Lebensläufe</h1>
+        <p class="text-muted small mb-0">Verwalten Sie hier Ihre CV-Profile.</p>
+    </div>
+    <a href="{% url 'cv_create' %}" class="btn btn-success">
+        <i class="fa-solid fa-plus me-2"></i>Neuen CV anlegen
+    </a>
+</div>
 
-<p>
-    <a href="{% url 'cv_create' %}">Neuen CV anlegen</a>
-    <a href="{% url 'quick_apply' %}">Schnellbewerbung (Job-Analyse)</a>
-</p>
-
-{% if cvs %}
-<ul>
+<div class="row">
     {% for cv in cvs %}
-      <li>
-        {{ cv.full_name }} – {{ cv.get_field_display }}
-        {% if cv.is_primary %}(Primary){% endif %}
-        |
-        <a href="{% url 'cv_update' cv.pk %}">Bearbeiten</a> |
-        <a href="{% url 'cv_import' cv.pk %}">AI-Import</a> |
-        <a href="{% url 'cv_delete' cv.pk %}" style="color: red;">Löschen</a>
-      </li>
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 border-start border-4 border-primary shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title fw-bold text-primary">{{ cv.full_name }}</h5>
+                    {% if cv.field == 'WEB' %}
+                        <span class="badge bg-info text-dark">Web / IT</span>
+                    {% elif cv.field == 'BWL' %}
+                        <span class="badge bg-warning text-dark">BWL / Finanzen</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Sonstiges</span>
+                    {% endif %}
+                </div>
+                
+                <p class="card-text text-muted small mb-3">
+                    <i class="fa-regular fa-envelope me-1"></i> {{ cv.email|default:"Keine E-Mail" }}
+                </p>
+
+                <div class="d-flex gap-2 mb-3">
+                    <span class="badge bg-light text-secondary border">
+                        {{ cv.skill_set.count }} Skills
+                    </span>
+                    <span class="badge bg-light text-secondary border">
+                        {{ cv.experience_set.count }} Jobs
+                    </span>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <a href="{% url 'cv_update' cv.pk %}" class="btn btn-sm btn-outline-primary flex-grow-1">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit
+                    </a>
+                    <a href="{% url 'cv_import' cv.pk %}" class="btn btn-sm btn-outline-dark" title="AI Import">
+                        <i class="fa-solid fa-robot"></i> AI
+                    </a>
+                    <a href="{% url 'cv_delete' cv.pk %}" class="btn btn-sm btn-outline-danger" title="Löschen">
+                        <i class="fa-solid fa-trash"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-light border text-center py-5">
+            <i class="fa-regular fa-folder-open fa-3x text-muted mb-3"></i>
+            <h4>Noch keine CVs vorhanden</h4>
+            <p class="text-muted">Erstellen Sie Ihren ersten Lebenslauf, um loszulegen.</p>
+            <a href="{% url 'cv_create' %}" class="btn btn-primary mt-2">Jetzt erstellen</a>
+        </div>
+    </div>
     {% endfor %}
-</ul>
-{% else %}
-  <p>Noch keine CVs vorhanden. Lege zuerst mindestens einen CV an.</p>
-{% endif %}
+</div>
 {% endblock %}
