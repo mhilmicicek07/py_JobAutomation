@@ -21,4 +21,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("cv_manager.urls")),
     path("jobs/", include("job_analyzer.urls")),
+    path('ai/', include('ai_bridge.urls')),
 ]
