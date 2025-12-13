@@ -1,15 +1,51 @@
 {% extends "base.html" %}
 
-{% block title %}CV AI-Import{% endblock %}
+{% block title %}CV Import (AI){% endblock %}
 
 {% block content %}
-<h1>AI-Import für {{ cv.full_name }}</h1>
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white d-flex align-items-center">
+                <i class="fa-solid fa-robot fa-lg me-3 text-info"></i>
+                <div>
+                    <h5 class="mb-0">AI Import für: {{ cv.full_name }}</h5>
+                    <small class="opacity-75">Fügen Sie Ihren CV-Text ein, die KI extrahiert Skills und Erfahrung.</small>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                
+                <div class="alert alert-info d-flex align-items-center" role="alert">
+                    <i class="fa-solid fa-circle-info me-3 fa-lg"></i>
+                    <div>
+                        <strong>Wie funktioniert das?</strong>
+                        <br>
+                        Kopieren Sie einfach den Text aus Ihrem PDF- oder Word-Lebenslauf (STRG+A, STRG+C) und fügen Sie ihn unten ein.
+                    </div>
+                </div>
 
-<form method="POST">
-    {% csrf_token %}
-    {{ form.as_p }}
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
 
-    <button type="submit">Import starten</button>
-    <a href="{% url 'dashboard' %}">Abbrechen</a>
-</form>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Abbrechen</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-wand-magic-sparkles me-2"></i> Daten extrahieren
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

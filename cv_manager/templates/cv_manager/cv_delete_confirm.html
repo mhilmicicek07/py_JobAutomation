@@ -1,18 +1,35 @@
 {% extends "base.html" %}
 
-{% block title %}CV löschen{% endblock %}
+{% block title %}Löschen bestätigen{% endblock %}
 
 {% block content %}
-<h2>CV löschen</h2>
-
-<p>Möchtest du den CV "<strong>{{ cv.full_name }}</strong>" wirklich löschen?</p>
-
-<form method="POST">
-    {% csrf_token %}
-    <button type="submit" style="background: red; color: white; padding: 8px 16px; border: none; border-radius: 4px;">
-        Ja, löschen
-    </button>
-
-    <a href="{% url 'dashboard' %}" style="margin-left: 10px;">Abbrechen</a>
-</form>
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card border-danger shadow">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fa-solid fa-triangle-exclamation me-2"></i>Löschen bestätigen</h5>
+            </div>
+            <div class="card-body text-center p-4">
+                <p class="lead mb-4">
+                    Möchten Sie den Lebenslauf von <br>
+                    <strong>{{ cv.full_name }}</strong> <br>
+                    wirklich unwiderruflich löschen?
+                </p>
+                <p class="text-muted small mb-4">
+                    Alle zugehörigen Skills, Erfahrungen und gespeicherten Bewerbungsentwürfe werden ebenfalls gelöscht.
+                </p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary px-4">Abbrechen</a>
+                        <button type="submit" class="btn btn-danger px-4">
+                            <i class="fa-solid fa-trash-can me-2"></i> Ja, löschen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
