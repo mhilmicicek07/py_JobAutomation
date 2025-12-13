@@ -1,11 +1,11 @@
 from __future__ import annotations
-from typing import Dict, List
+from typing import Dict, List, Any
 from datetime import date
-import os
-import json
 import logging
+import json
 
 from django.conf import settings
+from ai_bridge.providers import get_provider
 
 logger = logging.getLogger(__name__)
 
@@ -13,14 +13,11 @@ logger = logging.getLogger(__name__)
 # ── Yardımcı biçimlendiriciler ────────────────────────────────────────────────
 
 def _fmt_dmy(d: date | None) -> str:
-    """Gün.Ay.Yıl biçimi."""
     if not d:
         return ""
     return d.strftime("%d.%m.%Y")
 
-
 def _fmt_my(d: date | None) -> str:
-    """Ay/Yıl biçimi."""
     if not d:
         return ""
     return d.strftime("%m/%Y")
@@ -35,25 +32,9 @@ def _period_str(start, end) -> str:
     return ""
 
 def _join_nonempty(parts: List[str], sep: str = " • ") -> str:
-    """Boş olmayan parçaları birleştir."""
     return sep.join([p for p in parts if p])
 
-
-def _join_list(items: List[str], max_n: int = 3) -> str:
-    """Listeyi virgülle birleştir, en fazla max_n öğe göster."""
-    items = [i for i in items if i]
-    if not items:
-        return ""
-    return ", ".join(items[:max_n])
-
-
-# ── Süreç bilgilerini topla (Process modeli) ──────────────────────────────────
-
 def collect_process_facts(cv) -> List[str]:
-    """
-    cv_manager.Process kayıtlarından Almanca kısa bilgilendirme cümleleri üretir.
-    """
-    from cv_manager.models import Process  # lazy import
     facts: List[str] = []
     for p in cv.processes.all():
         t = p.type
@@ -81,10 +62,7 @@ def collect_process_facts(cv) -> List[str]:
 
 # ── ATS uyumlu CV bölümleri ───────────────────────────────────────────────────
 
-def build_cv_sections(cv, posting) -> Dict[str, str]:
-    """
-    ATS uyumlu, kopyalanabilir Almanca bölümler üretir.
-    """
+def build_cv_sections(cv, posting) -> Dict[str, Any]:
     # Profil
     if cv.field == "WEB":
         profil = _join_nonempty([
@@ -99,24 +77,28 @@ def build_cv_sections(cv, posting) -> Dict[str, str]:
     else:
         profil = f"{cv.full_name} – Berufliches Profil."
 
-    # Kenntnisse (ilandaki beceriler öne)
-    from cv_manager.models import Skill, Experience, Education  # lazy import
-    from job_analyzer import services as ja_services            # ilan becerileri için
-
-    # İlan becerileri (analiz edilmişse onu kullan; yoksa yerinde çıkar)
+    # İlan becerilerini al
     post_skills: List[str] = []
     if hasattr(posting, "extracted_skills") and posting.extracted_skills:
         post_skills = posting.extracted_skills
     else:
+        # Burada user=None gönderiyoruz çünkü build_cv_sections genellikle 
+        # zaten analiz edilmiş ilanla çalışır. Tekrar AI çağırmaya gerek yok.
+        # Gerekirse import edip çağırmak yerine posting.extracted_skills kullanılmalı.
+        from job_analyzer import services as ja_services
         data = ja_services.extract_requirements(posting.raw_text, posting.target_field)
         post_skills = data.get("skills", []) or []
+    
     need = {s.lower() for s in post_skills}
 
     # CV becerileri
+    from cv_manager.models import Skill, Experience, Education
     all_skills = list(Skill.objects.filter(cv=cv).order_by("name").values_list("name", flat=True))
+    
     matched = [s for s in all_skills if s.lower() in need]
     unmatched = [s for s in all_skills if s.lower() not in need]
     kenntnisse = ", ".join(matched + unmatched)
+    
     diagnostik = {
         "matched_skills": matched,
         "missing_skills": [s for s in post_skills if s.lower() not in {x.lower() for x in all_skills}],
@@ -124,9 +106,7 @@ def build_cv_sections(cv, posting) -> Dict[str, str]:
 
     # Berufserfahrung
     exps = Experience.objects.filter(cv=cv).order_by("-end_date", "-start_date")
-
-    # İlan becerileri kümesi (üstte zaten post_skills/need hesaplandı)
-    need_lower = need  # {skill.lower() ...}
+    need_lower = need 
 
     matched_lines, unmatched_lines = [], []
     for e in exps:
@@ -151,7 +131,7 @@ def build_cv_sections(cv, posting) -> Dict[str, str]:
         ausbildung_lines.append(line)
     ausbildung = "\n".join(ausbildung_lines)
 
-    # Hinweise (dinamik süreçler)
+    # Hinweise
     hinweise = " ".join(collect_process_facts(cv))
 
     return {
@@ -160,200 +140,137 @@ def build_cv_sections(cv, posting) -> Dict[str, str]:
         "erfahrung": erfahrung,
         "ausbildung": ausbildung,
         "hinweise": hinweise,
-        "diagnostik": diagnostik, # type: ignore
+        "diagnostik": diagnostik,
     }
 
 
-# ── Anschreiben üretimi ───────────────────────────────────────────────────────
+# ── Anschreiben üretimi (AI Provider Refactored) ──────────────────────────────
 
-def _build_cover_letter_openai(cv, posting, skills, process_lines, cv_sections) -> str:
+def build_cover_letter(cv, posting, user=None) -> str:
     """
-    OpenAI Responses API ile Almanca Anschreiben üretir.
+    Almanca Anschreiben metni üretir.
+    Eğer 'user' verilmişse ve AI ayarları yapılandırılmışsa AI (Provider) kullanır.
+    Aksi halde veya hata durumunda şablon tabanlı (template) üretim yapar.
     """
-    try:
-        from openai import OpenAI
-    except ImportError as exc:
-        raise RuntimeError(
-            "openai paketi yüklü değil. `pip install openai` çalıştır."
-        ) from exc
-
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY ortam değişkeni set edilmemiş.")
-
-    client = OpenAI(api_key=api_key)
-    model = (
-        getattr(settings, "OPENAI_MODEL_LETTER", None)
-        or getattr(settings, "OPENAI_DEFAULT_MODEL", "gpt-4o-mini")
-    )
-
-    payload = {
-        "job_posting_text": getattr(posting, "raw_text", ""),
-        "target_field": getattr(posting, "target_field", ""),
-        "posting_skills": list(skills or []),
-        "cv_field": getattr(cv, "field", ""),
-        "cv_full_name": getattr(cv, "full_name", ""),
-        "cv_sections": cv_sections,
-        "process_facts": process_lines,
-    }
-
-    instructions = (
-        "Du bist ein deutscher Bewerbungscoach. "
-        "Lies die JSON-Daten in der Eingabe (job_posting_text, cv_sections, process_facts). "
-        "Das Objekt cv_sections enthält u.a. die Schlüssel 'profil', 'kenntnisse', "
-        "'erfahrung', 'ausbildung', 'hinweise' und ggf. 'diagnostik'. "
-        "In 'diagnostik.matched_skills' stehen Fähigkeiten, die sowohl zur Stelle passen "
-        "als auch im Lebenslauf vorhanden sind. In 'diagnostik.missing_skills' stehen "
-        "Fähigkeiten, die in der Anzeige gefordert werden, im Lebenslauf aber NICHT vorhanden sind.\n\n"
-        "Schreibe ein vollständiges Anschreiben für eine Bewerbung in Deutschland. "
-        "Sprich den Arbeitgeber mit der formellen Anrede ('Sie') an. "
-        "Wenn im job_posting_text eine konkrete Kontaktperson (z.B. 'Frau Müller') klar erkennbar ist, "
-        "verwende 'Sehr geehrte Frau Müller,' oder 'Sehr geehrter Herr ...'. "
-        "Sonst verwende 'Sehr geehrte Damen und Herren,'. "
-        "Gehe auf die wichtigsten Anforderungen der Stelle ein und verbinde sie mit den Erfahrungen und Kenntnissen "
-        "aus cv_sections. Nutze process_facts (z.B. Arbeitsgenehmigung, Zeugnisbewertung, Verfügbarkeit), wenn sinnvoll.\n\n"
-        "Verwende NUR Informationen, die in den JSON-Daten enthalten sind; erfinde keine zusätzlichen Stationen, "
-        "Qualifikationen oder Defizite. "
-        "Formuliere das Anschreiben GRUNDSÄTZLICH POSITIV: betone passende Erfahrungen, Lernbereitschaft und Motivation. "
-        "Schreibe KEINE Sätze wie 'ich habe keine Erfahrung mit ...', 'mir fehlt ...' oder ähnliche Formulierungen, "
-        "die den Bewerber schwächer wirken lassen.\n\n"
-        "Wenn Technologien aus der Stellenanzeige in 'diagnostik.missing_skills' auftauchen, "
-        "behaupte NICHT, dass der Bewerber diese bereits sicher beherrscht. "
-        "Du darfst sie höchstens als Lernziel oder Entwicklungswunsch formulieren "
-        "(z.B. 'ich baue meine Kenntnisse in SAP FI gezielt weiter aus'), aber nicht als aktuelle Stärke. "
-        "Stärken und Schwerpunkte sollen sich primär an 'diagnostik.matched_skills' und den übrigen "
-        "Informationen aus cv_sections orientieren.\n\n"
-        "Antworte NUR mit dem finalen Anschreiben als Klartext, ohne Erklärungen und ohne JSON."
-    )
-
-    resp = client.responses.create(
-        model=model,
-        instructions=instructions,
-        input=json.dumps(payload, ensure_ascii=False),
-    )
-    return (resp.output_text or "").strip()
-
-def build_cover_letter(cv, posting) -> str:
-    """
-    Almanca Anschreiben metni. İlan becerilerini (posting.extracted_skills) ve süreçleri (cv.processes)
-    referans alır. Eğer extracted_skills boşsa, metinden yerinde çıkarım yapar.
-    OpenAI etkinse (AI_COVER_LETTER_PROVIDER veya AI_PROVIDER 'openai' ise) önce AI ile üretmeyi dener,
-    hata olursa klasik template'e düşer.
-    """
-    # 1) Süreç bilgileri (Verfügbarkeit vb.)
+    # 1) Veri Hazırlığı
     process_lines = collect_process_facts(cv)
     process_block = " ".join(process_lines) or "Ich bin zeitnah einsetzbar."
-
-    # 2) İlan becerileri
+    
     skills: List[str] = []
     if hasattr(posting, "extracted_skills") and posting.extracted_skills:
         skills = posting.extracted_skills
-    else:
-        from job_analyzer import services as ja_services  # lazy import
-        data = ja_services.extract_requirements(posting.raw_text, posting.target_field)
-        skills = data.get("skills", []) if isinstance(data, dict) else (data or [])
 
-    # 3) CV bölümleri (profil, kenntnisse, berufserfahrung)
     cv_sections = build_cv_sections(cv, posting)
 
-    # 3a) AI yolu – yalnızca provider 'openai' ise dene
-    provider = getattr(settings, "AI_COVER_LETTER_PROVIDER", None) or getattr(
-        settings, "AI_PROVIDER", "stub"
-    )
-    if provider == "openai":
+    # 2) AI Denemesi (Eğer user varsa)
+    ai_success = False
+    ai_text = ""
+
+    if user:
         try:
-            return _build_cover_letter_openai(
-                cv=cv,
-                posting=posting,
-                skills=skills,
-                process_lines=process_lines,
-                cv_sections=cv_sections,
+            # Sağlayıcıyı al (OpenAI, Gemini, Stub...)
+            provider = get_provider(user)
+            
+            # StubProvider ise (API key yoksa) hiç deneme, template'e düş
+            # (Provider'ın type'ını kontrol etmek yerine, extract_json çağırıp boş dönmesini bekleyebiliriz 
+            # ama StubProvider log basıyor, temiz olsun diye burada kesebiliriz. 
+            # Şimdilik doğrudan çağırıyoruz, Stub boş dict döner.)
+            
+            payload = {
+                "job_posting_text": getattr(posting, "raw_text", ""),
+                "target_field": getattr(posting, "target_field", ""),
+                "posting_skills": skills,
+                "cv_field": getattr(cv, "field", ""),
+                "cv_full_name": getattr(cv, "full_name", ""),
+                "cv_sections": cv_sections,
+                "process_facts": process_lines,
+            }
+
+            system_prompt = (
+                "Du bist ein deutscher Bewerbungscoach. "
+                "Erstelle ein professionelles Anschreiben basierend auf den JSON-Daten (Stellenanzeige + Lebenslauf). "
+                "Reagiere auf die Anforderungen der Stelle (job_posting_text) und matche sie mit den Stärken des Kandidaten (cv_sections). "
+                "Verwende eine positive, motivierte Sprache. Erfinde keine Fakten. "
+                "WICHTIG: Antworte als JSON-Objekt mit einem einzigen Schlüssel 'cover_letter', "
+                "der den kompletten Text des Anschreibens enthält. Keine Markdown-Formatierung im Text."
             )
-        except Exception:
-            logger.exception(
-                "OpenAI cover letter generation failed; falling back to template."
-            )
-            # Buradan sonra klasik template kodu çalışmaya devam edecek
 
-    # ── Klasik template tabanlı Anschreiben ───────────────────────────────────
+            # JSON String olarak gönderelim ki provider (extract_json) rahat işlesin
+            input_text = json.dumps(payload, ensure_ascii=False)
+            
+            # Provider çağrısı
+            response_data = provider.extract_json(input_text, system_prompt)
+            
+            # Yanıtı al
+            if response_data and "cover_letter" in response_data:
+                ai_text = response_data["cover_letter"]
+                if ai_text and len(ai_text) > 50:
+                    ai_success = True
 
-    # Becerileri kısaca bir cümleye dök – diagnostik'e göre
-    skills_sentence = ""
+        except Exception as e:
+            logger.error(f"AI Cover Letter generation failed: {e}")
+            # Fallback to template below
 
-    diagnostik = {}
-    if isinstance(cv_sections, dict):
-        diagnostik = cv_sections.get("diagnostik") or {}
+    if ai_success:
+        return ai_text
 
+    # ── Fallback: Klasik Template ─────────────────────────────────────────────
+    
+    logger.info("Falling back to template-based cover letter.")
+
+    diagnostik = cv_sections.get("diagnostik") or {} # type: ignore
     matched = diagnostik.get("matched_skills") or [] # type: ignore
     missing = set(diagnostik.get("missing_skills") or []) # type: ignore
 
-    # 1) Tercihen matched_skills
-    skills_for_sentence: List[str] = []
-
-    if matched:
-        skills_for_sentence = matched
-    else:
-        # 2) Aksi halde ilandan gelen skills, ama missing olanları ayıkla
-        base = skills or []
-        skills_for_sentence = [s for s in base if s not in missing]
-
-    # Boşları at, küçük/büyük harf farkı olmadan benzersizleştir
-    cleaned: List[str] = []
-    seen_keys = set()
+    # Skills Cümlesi
+    skills_for_sentence = matched if matched else [s for s in skills if s not in missing]
+    
+    # Temizle ve birleştir
+    cleaned = []
+    seen = set()
     for s in skills_for_sentence:
-        s_norm = (s or "").strip()
-        if not s_norm:
-            continue
-        key = s_norm.lower()
-        if key in seen_keys:
-            continue
-        seen_keys.add(key)
-        cleaned.append(s_norm)
+        norm = s.strip()
+        if norm and norm.lower() not in seen:
+            seen.add(norm.lower())
+            cleaned.append(norm)
 
+    skills_sentence = ""
     if cleaned:
-        max_skills = 6
-        short_list = cleaned[:max_skills]
-        if len(short_list) == 1:
-            skills_sentence = f" Meine Schwerpunkte liegen unter anderem in {short_list[0]}."
+        short = cleaned[:6]
+        if len(short) == 1:
+            skills_sentence = f" Meine Schwerpunkte liegen unter anderem in {short[0]}."
         else:
             skills_sentence = (
-                " Meine Schwerpunkte liegen unter anderem in "
-                + ", ".join(short_list[:-1])
-                + " und "
-                + short_list[-1]
-                + "."
+                " Meine Schwerpunkte liegen unter anderem in " 
+                + ", ".join(short[:-1]) + " und " + short[-1] + "."
             )
 
-    # CV alanına göre giriş paragrafı
+    # Giriş Paragrafı
     field = getattr(cv, "field", "")
     if field == "WEB":
         einleitung = (
             "Sehr geehrte Damen und Herren,\n\n"
             "mit großem Interesse bewerbe ich mich auf Ihre Position im Bereich Webentwicklung. "
-            "Ich bringe praxisnahe Erfahrung mit Python/Django im Backend und modernen JavaScript-Frameworks im Frontend mit. "
-            "In Projekten habe ich REST-APIs konzipiert und implementiert, Datenmodelle aufgebaut und Schnittstellen stabil betrieben."
+            "Ich bringe praxisnahe Erfahrung mit Python/Django im Backend und modernen JavaScript-Frameworks im Frontend mit."
         )
     elif field == "BWL":
         einleitung = (
             "Sehr geehrte Damen und Herren,\n\n"
             "gerne bewerbe ich mich auf Ihre Position in der Finanzbuchhaltung. "
-            "Ich verfüge über Erfahrung in der Kreditorenbuchhaltung, im Zahlungsverkehr und in der Abstimmung von Konten "
-            "sowie in vorbereitenden Tätigkeiten für Monats- und Jahresabschlüsse nach HGB."
+            "Ich verfüge über Erfahrung in der Kreditorenbuchhaltung und Monatsabschlüssen."
         )
     else:
         einleitung = (
             "Sehr geehrte Damen und Herren,\n\n"
-            "hiermit bewerbe ich mich auf die ausgeschriebene Position. "
-            "Ich bringe eine solide Kombination aus Fachkenntnissen und Praxis mit."
+            "hiermit bewerbe ich mich auf die ausgeschriebene Position."
         )
 
     kompetenz = (
-        "Ich arbeite strukturiert, eigenverantwortlich und lege Wert auf nachvollziehbare Ergebnisse. "
+        "Ich arbeite strukturiert und eigenverantwortlich. " 
         + (skills_sentence if skills_sentence else "")
     )
 
     verfuegbarkeit = process_block
     schluss = "Über die Möglichkeit eines persönlichen Gesprächs freue ich mich.\n\nMit freundlichen Grüßen"
 
-    letter = "\n\n".join([einleitung, kompetenz, verfuegbarkeit, schluss])
-    return letter
+    return "\n\n".join([einleitung, kompetenz, verfuegbarkeit, schluss])
