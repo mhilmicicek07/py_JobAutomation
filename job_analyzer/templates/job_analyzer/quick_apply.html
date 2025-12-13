@@ -3,51 +3,144 @@
 {% block title %}Schnellbewerbung{% endblock %}
 
 {% block content %}
-<h1>Schnellbewerbung</h1>
+<div class="row">
+    <div class="col-lg-5 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fa-solid fa-file-import me-2"></i>Stellenanzeige Analyse</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ form.target_field.label }}</label>
+                        {{ form.target_field }}
+                    </div>
 
-<div class="card" style="padding: 20px; margin-bottom: 25px;">
-    <form method="POST">
-        {% csrf_token %}
-        {{ form.as_p }}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ form.raw_text.label }}</label>
+                        <textarea name="{{ form.raw_text.name }}" 
+                                  class="form-control" 
+                                  rows="12" 
+                                  placeholder="Kopieren Sie hier den Text der Stellenanzeige hinein...">{{ form.raw_text.value|default_if_none:"" }}</textarea>
+                    </div>
 
-        <button type="submit" class="btn btn-primary">Analysieren & Anschreiben erzeugen</button>
-    </form>
+                    {% if not readonly %}
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fa-solid fa-wand-magic-sparkles me-2"></i>Analysieren & Anschreiben
+                        </button>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fa-solid fa-eye"></i> Nur-Lese-Modus (Historie)
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        {% if result %}
+        
+        <div class="card mb-4 border-start border-5 {% if result.match_score >= 80 %}border-success{% elif result.match_score >= 50 %}border-warning{% else %}border-danger{% endif %}">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted mb-1">Match Score</h6>
+                    <h2 class="mb-0 fw-bold">{{ result.match_score }}<span class="text-muted fs-6">/100</span></h2>
+                </div>
+                <div class="text-end">
+                    <h6 class="text-muted mb-1">Entscheidung</h6>
+                    {% if result.decision == 'APPLY' %}
+                        <span class="badge bg-success fs-5">APPLY</span>
+                    {% elif result.decision == 'REVIEW' %}
+                        <span class="badge bg-warning text-dark fs-5">REVIEW</span>
+                    {% else %}
+                        <span class="badge bg-danger fs-5">SKIP</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs mb-3" id="resultTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-cover" type="button">
+                    <i class="fa-regular fa-envelope me-2"></i>Anschreiben
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-skills" type="button">
+                    <i class="fa-solid fa-list-check me-2"></i>Skills & Analyse
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-cvparts" type="button">
+                    <i class="fa-regular fa-file-lines me-2"></i>CV-Blöcke
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            
+            <div class="tab-pane fade show active" id="tab-cover">
+                <div class="card bg-light">
+                    <div class="card-body position-relative">
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-3" onclick="navigator.clipboard.writeText(document.getElementById('coverText').innerText)">
+                            <i class="fa-regular fa-copy"></i> Kopieren
+                        </button>
+                        <pre id="coverText" style="white-space: pre-wrap; font-family: 'Segoe UI', sans-serif; font-size: 1rem; color: #333;">{{ result.cover_letter }}</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="tab-skills">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5>Gesuchte Skills (aus Anzeige)</h5>
+                        <div class="mb-3">
+                            {% for skill in result.skills %}
+                                <span class="badge bg-secondary me-1 mb-1">{{ skill }}</span>
+                            {% empty %}
+                                <span class="text-muted">Keine spezifischen Skills extrahiert.</span>
+                            {% endfor %}
+                        </div>
+                        
+                        <h5>Erfahrung</h5>
+                        <ul>
+                        {% for exp in result.experience %}
+                            <li>{{ exp }}</li>
+                        {% empty %}
+                            <li class="text-muted">Keine Erfahrungsanforderungen gefunden.</li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="tab-cvparts">
+                {% for section in result.sections %}
+                <div class="card mb-3">
+                    <div class="card-header fw-bold bg-white">
+                        {{ section.label }}
+                    </div>
+                    <div class="card-body p-2 bg-light">
+                        <pre style="white-space: pre-wrap; margin:0; font-size: 0.9em;">{{ section.text }}</pre>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+
+        {% else %}
+        <div class="alert alert-light border text-center py-5">
+            <i class="fa-solid fa-arrow-left fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">Warten auf Analyse...</h4>
+            <p class="mb-0 text-muted">Fügen Sie links eine Stellenanzeige ein.</p>
+        </div>
+        {% endif %}
+    </div>
 </div>
-
-{% if result %}
-    <hr>
-
-    <h2>Ergebnis</h2>
-
-    <!-- Score -->
-    <div class="card" style="padding: 15px; margin-bottom: 20px;">
-        <h3>CV: {{ result.cv.full_name }} (Fokus: {{ result.cv.get_field_display }})</h3>
-        <p><strong>Score:</strong> {{ result.score }} / 100 – <strong>Entscheidung:</strong> {{ result.decision }}</p>
-    </div>
-
-    <!-- Skills -->
-    {% if result.skills %}
-    <div class="card" style="padding: 15px; margin-bottom: 20px;">
-        <h3>Erkannte Skills</h3>
-        <p>{{ result.skills|join:", " }}</p>
-    </div>
-    {% endif %}
-
-    <!-- Anschreiben -->
-    {% if result.cover_letter %}
-    <div class="card" style="padding: 15px; margin-bottom: 20px;">
-        <h3>Anschreiben (DE)</h3>
-        <pre style="white-space: pre-wrap;">{{ result.cover_letter }}</pre>
-    </div>
-    {% endif %}
-
-    <!-- ATS CV Text -->
-    {% if result.ats_text %}
-    <div class="card" style="padding: 15px;">
-        <h3>CV-Sektionen (ATS-Text)</h3>
-        <pre style="white-space: pre-wrap;">{{ result.ats_text }}</pre>
-    </div>
-    {% endif %}
-{% endif %}
-
 {% endblock %}
