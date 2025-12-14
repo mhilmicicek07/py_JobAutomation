@@ -1,6 +1,7 @@
 from django import forms
-from .models import CV
+from .models import CV, Experience, Education, Skill
 
+# --- Ana CV Formu ---
 class CVForm(forms.ModelForm):
     class Meta:
         model = CV
@@ -10,7 +11,6 @@ class CVForm(forms.ModelForm):
             "email": "E-Mail-Adresse",
             "field": "Fachbereich / Fokus",
         }
-        # Bootstrap stilleri için widget tanımları
         widgets = {
             "full_name": forms.TextInput(attrs={"class": "form-control", "placeholder": "z. B. Max Mustermann"}),
             "email": forms.EmailInput(attrs={"class": "form-control", "placeholder": "name@example.com"}),
@@ -32,3 +32,56 @@ class CVImportForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "z. B. LinkedIn Profil Version"}),
     )
+
+# --- ALT FORMLAR (CV Parçaları İçin) ---
+
+class ExperienceForm(forms.ModelForm):
+    class Meta:
+        model = Experience
+        fields = ["title", "company", "start_date", "end_date", "description"]
+        labels = {
+            "title": "Jobtitel / Position",
+            "company": "Arbeitgeber",
+            "start_date": "Beginn",
+            "end_date": "Ende (Leer lassen für 'Aktuell')",
+            "description": "Beschreibung / Aufgaben",
+        }
+        widgets = {
+            "title": forms.TextInput(attrs={"class": "form-control"}),
+            "company": forms.TextInput(attrs={"class": "form-control"}),
+            "start_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "end_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "description": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
+        }
+
+class EducationForm(forms.ModelForm):
+    class Meta:
+        model = Education
+        fields = ["degree", "institution", "start_date", "end_date", "status"]
+        labels = {
+            "degree": "Abschluss / Studiengang",
+            "institution": "Institution / Universität",
+            "start_date": "Beginn",
+            "end_date": "Ende",
+            "status": "Status",
+        }
+        widgets = {
+            "degree": forms.TextInput(attrs={"class": "form-control"}),
+            "institution": forms.TextInput(attrs={"class": "form-control"}),
+            "start_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "end_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+            "status": forms.Select(attrs={"class": "form-select"}),
+        }
+
+class SkillForm(forms.ModelForm):
+    class Meta:
+        model = Skill
+        fields = ["name", "level"]
+        labels = {
+            "name": "Skill / Technologie",
+            "level": "Niveau",
+        }
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "z. B. Python"}),
+            "level": forms.Select(attrs={"class": "form-select"}),
+        }
