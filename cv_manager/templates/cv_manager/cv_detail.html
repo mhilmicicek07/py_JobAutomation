@@ -120,6 +120,56 @@
             {% endfor %}
         </div>
 
+        <div class="mb-5">
+            <h4 class="mb-3"><i class="fa-solid fa-language me-2 text-secondary"></i>Sprachen</h4>
+            
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form action="{% url 'add_language' cv.pk %}" method="post" class="row g-2 align-items-center mb-3">
+                        {% csrf_token %}
+                        <div class="col-6">
+                            <input type="text" name="name" class="form-control form-control-sm" placeholder="Sprache (z. B. Englisch)" required>
+                        </div>
+                        <div class="col-4">
+                            <select name="level" class="form-select form-select-sm">
+                                <option value="Native">Muttersprache</option>
+                                <option value="C2">C2 (Exzellent)</option>
+                                <option value="C1">C1 (Fortgeschritten)</option>
+                                <option value="B2" selected>B2 (Gut)</option>
+                                <option value="B1">B1 (Mittel)</option>
+                                <option value="A2">A2 (Grundlagen)</option>
+                                <option value="A1">A1 (Einstieg)</option>
+                            </select>
+                        </div>
+                        <div class="col-2">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </form>
+
+                    <ul class="list-group list-group-flush">
+                        {% for lang in languages %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <div>
+                                <span class="fw-bold">{{ lang.name }}</span>
+                                <span class="badge bg-light text-dark border ms-2">{{ lang.get_level_display }}</span>
+                            </div>
+                            <form action="{% url 'delete_language' cv.pk lang.pk %}" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Löschen">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-muted small fst-italic px-0">Keine Sprachen eingetragen.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
         <div>
             <h4 class="mb-3"><i class="fa-solid fa-code me-2 text-secondary"></i>Skills</h4>
             
