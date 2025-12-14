@@ -131,3 +131,24 @@ class Process(models.Model):
         if today.day < self.start_date.day:
             total -= 1
         return max(total, 0)
+    
+class Language(models.Model):
+    LEVEL_CHOICES = [
+        ("A1", "A1 – Einstieg"),
+        ("A2", "A2 – Grundlagen"),
+        ("B1", "B1 – Mittelstufe"),
+        ("B2", "B2 – Gute Mittelstufe"),
+        ("C1", "C1 – Fortgeschrittene Kenntnisse"),
+        ("C2", "C2 – Exzellente Kenntnisse"),
+        ("Native", "Muttersprache"),
+    ]
+
+    cv = models.ForeignKey(CV, on_delete=models.CASCADE, related_name="languages")
+    name = models.CharField(max_length=50, help_text="z. B. Deutsch, Englisch")
+    level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
+
+    class Meta:
+        ordering = ["-level", "name"] # Önce seviyesi yüksek olanlar görünsün
+
+    def __str__(self):
+        return f"{self.name} ({self.get_level_display()})" # type: ignore
