@@ -2,8 +2,8 @@ from types import SimpleNamespace
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import CV, Experience, Education, Skill
-from .forms import CVForm, CVImportForm, ExperienceForm, EducationForm, SkillForm
+from .models import *
+from .forms import *
 from ai_bridge.models import CVSource
 from ai_bridge import services as ai_services
 
@@ -85,6 +85,7 @@ def cv_detail(request, pk):
         "experiences": cv.experiences.all().order_by("-end_date", "-start_date"), # type: ignore
         "educations": cv.educations.all().order_by("-end_date", "-start_date"), # type: ignore
         "skills": cv.skills.all().order_by("name"), # type: ignore
+        "languages": cv.languages.all(),  # YENİ EKLENEN SATIR # type: ignore
     }
     return render(request, "cv_manager/cv_detail.html", context)
 
@@ -197,4 +198,28 @@ def delete_skill(request, cv_id, skill_id):
     if request.method == "POST":
         skill.delete()
         messages.success(request, "Skill gelöscht.")
+    return redirect("cv_detail", pk=cv.pk)
+
+# ── LANGUAGE CRUD ─────────────────────────────────────────────────────────────
+
+@login_required
+def add_language(request, cv_id):
+    cv = get_object_or_404(CV, pk=cv_id, user=request.user)
+    if request.method == "POST":
+        form = LanguageForm(request.POST)
+        if form.is_valid():
+            lang = form.save(commit=False)
+            lang.cv = cv
+            lang.save()
+            messages.success(request, f"Sprache '{lang.name}' hinzugefügt.")
+            return redirect("cv_detail", pk=cv.pk)
+    return redirect("cv_detail", pk=cv.pk)
+
+@login_required
+def delete_language(request, cv_id, lang_id):
+    cv = get_object_or_404(CV, pk=cv_id, user=request.user)
+    lang = get_object_or_404(Language, pk=lang_id, cv=cv)
+    if request.method == "POST":
+        lang.delete()
+        messages.success(request, "Sprache gelöscht.")
     return redirect("cv_detail", pk=cv.pk)

@@ -25,4 +25,8 @@ urlpatterns = [
     # YENİ: Skill (Yetenek) İşlemleri
     path("<int:cv_id>/skill/add/", add_skill, name="add_skill"),
     path("<int:cv_id>/skill/<int:skill_id>/delete/", delete_skill, name="delete_skill"),
+
+    # YENİ: Language (Dil) İşlemleri
+    path("<int:cv_id>/language/add/", add_language, name="add_language"),
+    path("<int:cv_id>/language/<int:lang_id>/delete/", delete_language, name="delete_language"),
 ]
