@@ -1,7 +1,7 @@
 import logging
 import datetime
 from .providers import get_provider
-from cv_manager.models import Skill, Experience, Education
+from cv_manager.models import *
 
 logger = logging.getLogger(__name__)
 
@@ -40,13 +40,16 @@ def ai_extract_cv(cv_source, user):
     if not text:
         return {}
 
+    # 2. DEĞİŞİKLİK: Prompt'a 'languages' eklendi
     system_prompt = (
         "You are an expert CV parser. "
         "Extract the candidate's details into a structured JSON. "
         "Keys needed: "
         "'skills' (list of strings), "
         "'experience' (list of objects with keys: title, company, start, end, description), "
-        "'education' (list of objects with keys: degree, institution, start, end, status)."
+        "'education' (list of objects with keys: degree, institution, start, end, status), "
+        "'languages' (list of objects with keys: name, level). "
+        "For language level, try to map to CEFR standards: A1, A2, B1, B2, C1, C2, or Native. "
         "Dates should be in 'MM/YYYY' format if possible. If currently working, set end to 'Present'."
     )
 
@@ -64,10 +67,9 @@ def _parse_date_str(date_str):
     'MM/YYYY', 'YYYY-MM', 'YYYY' formatlarını Python date objesine çevirir.
     Hatalı formatta None döner.
     """
-    if not date_str or str(date_str).lower() in ["present", "heute", "current"]:
+    if not date_str or str(date_str).lower() in ["present", "heute", "current", "aktuell"]:
         return None
     
-    # Olası formatlar
     formats = ["%m/%Y", "%Y-%m", "%Y", "%m.%Y"]
     
     for fmt in formats:
@@ -79,14 +81,12 @@ def _parse_date_str(date_str):
 
 def apply_cv_snapshot(cv, snapshot, merge=False):
     """
-    AI çıktısını (JSON) alır ve CV'ye ait Skill, Experience, Education kayıtlarını oluşturur.
-    merge=False ise önce eskileri siler (temiz sayfa).
+    AI çıktısını (JSON) alır ve CV'ye ait Skill, Experience, Education ve Language kayıtlarını oluşturur.
     """
-    # View tarafında SimpleNamespace veya Model objesi gelebilir, output'u alalım
     data = getattr(snapshot, "output", {}) or {}
     
     if not data:
-        return {"skills": 0, "experience": 0, "education": 0}
+        return {"skills": 0, "experience": 0, "education": 0, "languages": 0}
 
     # 1. Skills
     new_skills = data.get("skills", [])
@@ -94,15 +94,12 @@ def apply_cv_snapshot(cv, snapshot, merge=False):
         if not merge:
             Skill.objects.filter(cv=cv).delete()
         
-        # Tekrarı önlemek için mevcutları al
         existing = set(Skill.objects.filter(cv=cv).values_list("name", flat=True))
-        
         to_create = []
         for s in new_skills:
             if isinstance(s, str) and s not in existing:
                 to_create.append(Skill(cv=cv, name=s.strip()))
-                existing.add(s) # Aynı döngüde tekrar eklememek için
-        
+                existing.add(s)
         Skill.objects.bulk_create(to_create)
 
     # 2. Experience
@@ -141,9 +138,8 @@ def apply_cv_snapshot(cv, snapshot, merge=False):
             institution = edu.get("institution", "")
             start = _parse_date_str(edu.get("start"))
             end = _parse_date_str(edu.get("end"))
-            status = edu.get("status", "DONE") # Varsayılan DONE
+            status = edu.get("status", "DONE")
             
-            # Status mapping
             if isinstance(status, str) and status.lower() in ["ongoing", "current", "laufend"]:
                 status = "ONGOING"
             else:
@@ -159,8 +155,36 @@ def apply_cv_snapshot(cv, snapshot, merge=False):
             )
             created_edus += 1
 
+    # 4. Languages (3. DEĞİŞİKLİK: Dillerin Kaydedilmesi)
+    langs = data.get("languages", [])
+    created_langs = 0
+    if langs:
+        if not merge:
+            Language.objects.filter(cv=cv).delete()
+            
+        valid_levels = ["A1", "A2", "B1", "B2", "C1", "C2", "Native"]
+        
+        for lang in langs:
+            name = lang.get("name", "Sprache")
+            level_raw = lang.get("level", "B2") # Varsayılan B2
+            
+            # Basit bir eşleştirme (AI bazen 'C1 - Advanced' diyebilir, temizleyelim)
+            level_clean = "B2"
+            for vl in valid_levels:
+                if vl.lower() in str(level_raw).lower():
+                    level_clean = vl
+                    break
+            
+            Language.objects.create(
+                cv=cv,
+                name=name,
+                level=level_clean
+            )
+            created_langs += 1
+
     return {
         "skills": len(new_skills),
         "experience": created_exps,
-        "education": created_edus
+        "education": created_edus,
+        "languages": created_langs
     }
