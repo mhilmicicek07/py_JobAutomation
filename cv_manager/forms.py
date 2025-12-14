@@ -1,5 +1,5 @@
 from django import forms
-from .models import CV, Experience, Education, Skill
+from .models import *
 
 # --- Ana CV Formu ---
 class CVForm(forms.ModelForm):
@@ -83,5 +83,18 @@ class SkillForm(forms.ModelForm):
         }
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "z. B. Python"}),
+            "level": forms.Select(attrs={"class": "form-select"}),
+        }
+
+class LanguageForm(forms.ModelForm):
+    class Meta:
+        model = Language
+        fields = ["name", "level"]
+        labels = {
+            "name": "Sprache",
+            "level": "Niveau",
+        }
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "z. B. Englisch"}),
             "level": forms.Select(attrs={"class": "form-select"}),
         }
