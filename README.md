@@ -6,7 +6,7 @@
 [![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-5.2.7-green.svg)](https://www.djangoproject.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/Tests-56%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-62%20passed-brightgreen.svg)]()
 
 ---
 
