@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from cv_manager.models import CV
 from job_analyzer.models import JobPosting
+from .encryption import encrypt_api_key, decrypt_api_key
 
 # ── KULLANICI AYARLARI (YENİ) ─────────────────────────────────────────────────
 
@@ -24,15 +25,37 @@ class UserAISettings(models.Model):
         help_text="Kullanmak istediğiniz AI sağlayıcısı."
     )
     api_key = models.CharField(
-        max_length=255, 
+        max_length=512,  # Şifrelenmiş key daha uzun olabilir
         blank=True, 
-        help_text="Seçilen sağlayıcıya ait API Anahtarı (sk-..., AIza... vb.)"
+        help_text="Seçilen sağlayıcıya ait API Anahtarı (şifrelenmiş olarak saklanır)"
     )
     model_name = models.CharField(
         max_length=50, 
         blank=True, 
         help_text="Özel model adı (Boş bırakılırsa varsayılan kullanılır. Örn: gpt-4o-mini)"
     )
+
+    def save(self, *args, **kwargs):
+        """
+        API key'i otomatik şifrele.
+        """
+        if self.api_key and not self._is_encrypted(self.api_key):
+            self.api_key = encrypt_api_key(self.api_key)
+        super().save(*args, **kwargs)
+    
+    def get_decrypted_api_key(self) -> str:
+        """
+        Şifrelenmiş API key'i çözülmüş halde döndür.
+        """
+        return decrypt_api_key(self.api_key) if self.api_key else ""
+    
+    @staticmethod
+    def _is_encrypted(value: str) -> bool:
+        """
+        Değerin zaten şifrelenmiş olup olmadığını kontrol et.
+        Fernet encrypted strings 'gAAAAA' ile başlar (base64 encoding).
+        """
+        return value.startswith("gAAAAA") if value else False
 
     def __str__(self):
         return f"{self.user.username} - {self.provider}"

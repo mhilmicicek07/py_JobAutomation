@@ -1,92 +1,70 @@
-# Byte-compiled / cache
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Packaging
 .Python
 build/
+develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
 wheels/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Tests / coverage
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-
-# Translations
-*.mo
-*.pot
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
 
 # Django
 *.log
 local_settings.py
 db.sqlite3
-db.sqlite
+db.sqlite3-journal
 media/
-# collected static output (uygun ise)
 staticfiles/
 static_root/
 
-# Env / secrets
+# Environment Variables
 .env
-.env.*
-*.env
+.env.local
+.env.*.local
+!.env.example
 
-# Virtual env
-venv/
-.venv/
-ENV/
-env/
-venv.bak/
-
-# IDE / OS
+# IDE
 .vscode/
 .idea/
-*.code-workspace
+*.swp
+*.swo
+*~
 .DS_Store
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Migrations (isteğe bağlı, şu an yorumlu)
+# */migrations/*.py
+# !*/migrations/__init__.py
+
+# Sensitive Data
+*.key
+*.pem
+*.secret
+
+# Windows
 Thumbs.db
+ehthumbs.db
 Desktop.ini
-
-# Type checkers / linters
-.mypy_cache/
-.dmypy.json
-dmypy.json
-.ruff_cache/
-
-# pyenv
-.python-version
-
-# Lock files (opsiyonel)
-Pipfile.lock
-poetry.lock
-
-# Misc cache
-*.cache
-
-# Jupyter
-.ipynb_checkpoints/

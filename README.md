@@ -1,439 +1,337 @@
-# py_JobAutomation
+# 🤖 py_JobAutomation
 
-Django tabanlı iş başvurusu otomasyonu (özel repo).
+> **Django-basiertes System zur Automatisierung von Bewerbungsprozessen**  
+> Yapay zeka destekli iş başvuru otomasyonu (Almanca Anschreiben üretimi, CV yönetimi, ilan analizi)
 
-## Gereksinimler
-- Python 3.13
-- Django 5.2.7
+[![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/Django-5.2.7-green.svg)](https://www.djangoproject.com/)
+[![License](https://img.shields.io/badge/License-Private-red.svg)]()
 
-## Kurulum
+---
+
+## 📋 İçindekiler
+
+- [Özellikler](#-özellikler)
+- [Teknoloji Stack](#-teknoloji-stack)
+- [Kurulum](#-kurulum)
+- [AI Konfigürasyonu](#-ai-konfigürasyonu)
+- [Kullanım](#-kullanım)
+- [Testler](#-testler)
+- [Proje Yapısı](#-proje-yapısı)
+- [Katkıda Bulunma](#-katkıda-bulunma)
+
+---
+
+## ✨ Özellikler
+
+### 📄 CV Yönetimi (`cv_manager`)
+- ✅ Çoklu CV profili (Web Geliştirme, BWL, Genel)
+- ✅ Detaylı CV Studio: Deneyim, Eğitim, Yetenekler, Diller (CEFR standartları)
+- ✅ **AI ile CV İmport**: Ham metin → Yapılandırılmış veri (GPT-4o / Gemini / Groq)
+- ✅ Kullanıcı bazlı veri izolasyonu
+- ✅ Process tracking (Çalışma izni, istifa, ehliyet vs.)
+
+### 🔍 İlan Analizi (`job_analyzer`)
+- ✅ Otomatik beceri/deneyim çıkarımı (AI + heuristic fallback)
+- ✅ CV-İlan eşleşme skoru (0-100)
+- ✅ Akıllı karar verme: **APPLY** (≥80), **REVIEW** (≥50), **SKIP** (<50)
+- ✅ Hızlı başvuru ekranı (tek tıkla analiz + Anschreiben)
+
+### ✍️ Başvuru Mektubu (`applicant_letters`)
+- ✅ **Almanca Anschreiben** üretimi (AI veya template)
+- ✅ ATS uyumlu CV bölümleri (Profil, Kenntnisse, Erfahrung...)
+- ✅ Diagnostik sistemi: Güçlü/eksik yetenekleri tespit eder
+- ✅ Pozitif dil kullanımı (AI prompt'unda eksiklikleri negatif sunmaz)
+
+### 🧠 AI Entegrasyonu (`ai_bridge`)
+- ✅ **Multi-provider desteği**: OpenAI, Google Gemini, Groq
+- ✅ **Kullanıcı bazlı API ayarları** (herkes kendi key'ini kullanır)
+- ✅ **Otomatik API Key şifreleme** (Fernet encryption)
+- ✅ Snapshot sistemi (AI çıktılarını kaydet/tekrar kullan)
+- ✅ **Fallback mekanizması**: AI başarısız olursa heuristik parser devreye girer
+
+---
+
+## 🛠 Teknoloji Stack
+
+| Kategori | Teknolojiler |
+|----------|-------------|
+| **Backend** | Django 5.2.7, Python 3.13 |
+| **Database** | SQLite (dev), PostgreSQL (production) |
+| **AI/ML** | OpenAI API, Google Gemini, Groq |
+| **Frontend** | Bootstrap 5.3, Font Awesome |
+| **Security** | Fernet Encryption, CSRF, User Auth |
+| **Testing** | pytest, pytest-django |
+
+---
+
+## 🚀 Kurulum
+
+### 1. Gereksinimler
+```bash
+# Python 3.13 yüklü olmalı
+python --version  # >= 3.13
+```
+
+### 2. Projeyi Klonlayın
+```bash
+git clone https://github.com/yourusername/py_JobAutomation.git
+cd py_JobAutomation
+```
+
+### 3. Virtual Environment Oluşturun
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# Mac/Linux
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 4. Bağımlılıkları Yükleyin
 ```bash
 pip install -r requirements.txt
+```
+
+### 5. Environment Variables Ayarlayın
+```bash
+# env.example dosyasını kopyalayın
+cp env.example .env
+
+# .env dosyasını düzenleyin:
+SECRET_KEY=your-django-secret-key-here
+DEBUG=True
+```
+
+### 6. Veritabanı Migration
+```bash
 python manage.py migrate
+```
+
+### 7. Superuser Oluşturun
+```bash
+python manage.py createsuperuser
+```
+
+### 8. Sunucuyu Başlatın
+```bash
 python manage.py runserver
 ```
 
-AI Entegrasyonu (OpenAI)
-Bu proje isteğe bağlı olarak OpenAI kullanarak:
-
-
-İlan metinlerinden gereksinim/skills çıkarabilir,
-
-
-CV metinlerini (raw text) yapılandırılmış hale getirebilir (skills / experience / education),
-
-
-Almanca Anschreiben (cover letter) üretebilir.
-
-
-Mimari bilerek fallback’li tasarlandı:
-
-
-OpenAI çalışmazsa veya kapatırsan:
-
-
-Heuristik parser’lar ve template tabanlı Anschreiben devreye girer,
-
-
-Uygulama “tamamen kör” kalmaz.
-
-
-
-
-1. Gerekli Python paketi
-requirements.txt zaten içeriyor:
-pip install -r requirements.txt
-
-Alternatif:
-pip install openai
-
-2. Ortam değişkeni (OPENAI_API_KEY)
-OpenAI API anahtarını ortam değişkeni olarak vermen gerekiyor.
-Örnek (PowerShell):
-$env:OPENAI_API_KEY = "sk-...."
-python manage.py runserver
-
-Notlar:
-
-
-Bu ayar sadece o terminal oturumu için geçerlidir.
-
-
-Kalıcı yapmak istersen:
-
-
-Windows “Environment Variables” (Kullanıcı değişkenleri) → OPENAI_API_KEY ekleyebilirsin.
-
-
-
-
-API key’i asla repoya, koda, README’ye veya ekran görüntüsüne koyma.
-
-
-
-Django Ayarları (settings.py)
-py_JobAutomation/settings.py içinde AI ile ilgili bölüm:
-AI_PROVIDER = "openai"   # "openai" veya "stub"
-
-OPENAI_DEFAULT_MODEL = "gpt-4o-mini"
-
-OPENAI_MODEL_CV = "gpt-4o-mini"         # CV extraction
-OPENAI_MODEL_POSTING = "gpt-4o-mini"    # Job posting extraction
-OPENAI_MODEL_LETTER = "gpt-4o-mini"     # Cover letter / Anschreiben
-
-AI_COVER_LETTER_PROVIDER = "openai"     # "openai" veya "stub"
-
-Tipik senaryolar:
-
-
-OpenAI tamamen kapalı (sadece heuristik + template):
-AI_PROVIDER = "stub"
-AI_COVER_LETTER_PROVIDER = "stub"
-
-
-
-OpenAI her yerde açık (şu anki varsayılan):
-AI_PROVIDER = "openai"
-AI_COVER_LETTER_PROVIDER = "openai"
-
-
-
-Bu ayarlar değiştirilerek proje “offline / cheap mode” ile “full AI mode” arasında hızlıca alınabilir.
-
-Nasıl Çalışıyor? (Kod Seviyesi)
-1. İlan analizi (Job postings)
-Fonksiyon:
-from ai_bridge.services import ai_extract_posting
-
-
-
-ai_extract_posting(posting):
-
-
-posting.raw_text üzerinden çalışır.
-
-
-AI_PROVIDER == "openai" ise OpenAI Responses API’yi JSON modda çağırır.
-
-
-Herhangi bir hata durumunda (API key yok, limit, network vs.):
-
-
-Hata logger.exception(...) ile loglanır,
-
-
-job_analyzer.services.extract_requirements(...) heuristiğine otomatik düşer.
-
-
-
-
-Dönen yapı:
-{
-    "skills": [...],
-    "experience": [...],
-    "target_field": posting.target_field,
-}
-
-
-
-
-
-Admin tarafında:
-
-
-JobPosting modeli için actions:
-
-
-AI: İlandan gereksinimleri çıkar (snapshot kaydet)
-
-
-AI: Son ilan snapshot'ını uygula
-
-
-
-
-Bu akış:
-
-
-OpenAI / heuristik ile bir ExtractionSnapshot kaydediyor,
-
-
-Son snapshot’ı JobPosting.extracted_skills, extracted_experience, match_score, decision alanlarına uyguluyor.
-
-
-
-
-2. CV analizi (raw CV text → yapılandırılmış veri)
-Fonksiyon:
-from ai_bridge.services import ai_extract_cv
-
-
-
-ai_extract_cv(cv_source):
-
-
-cv_source.raw_text kullanan bir fonksiyon; model tipi önemli değil, raw_text alanı olsun yeter.
-
-
-AI_PROVIDER == "openai" ise OpenAI CV parser’ı çalıştırır:
-
-
-Çıktı şeması:
-{
-    "skills": [...],
-    "experience": [
-        {
-            "title": "...",
-            "company": "...",
-            "start": "MM/YYYY" veya None,
-            "end": "MM/YYYY" veya None,
-            "description": "..."
-        },
-        ...
-    ],
-    "education": [
-        {
-            "degree": "...",
-            "institution": "...",
-            "start": "MM/YYYY" veya None,
-            "end": "MM/YYYY" veya None,
-            "status": "completed" | "ongoing" | "unknown"
-        },
-        ...
-    ]
-}
-
-
-
-
-
-Hata durumunda:
-
-
-Hata loglanır,
-
-
-ai_extract_cv_text adlı heuristik parser’a düşer.
-
-
-
-
-
-
-Admin actions (CV kaynağı için):
-
-
-AI: CV’den çıkar (snapshot kaydet)
-
-
-AI: Son CV snapshot'ını uygula
-
-
-Bu akış:
-
-
-ai_bridge.ExtractionSnapshot(kind="CV") kaydı oluşturur,
-
-
-apply_cv_snapshot fonksiyonu ile:
-
-
-cv_manager.Skill
-
-
-cv_manager.Experience
-
-
-cv_manager.Education
-tablolarına merge ederek kayıt ekler (varsa tekrar etmiyor).
-
-
-
-
-3. Anschreiben (Cover Letter) üretimi
-Ana fonksiyon:
-from applicant_letters.services import build_cover_letter
-
-İmza:
-build_cover_letter(cv, posting) -> str
-
-Davranış:
-
-
-AI_COVER_LETTER_PROVIDER == "openai" ise:
-
-
-Önce _build_cover_letter_openai(...) çağrılır.
-
-
-OpenAI tarafında bir hata olursa:
-
-
-Hata logger.exception(...) ile loglanır,
-
-
-Klasik template tabanlı Anschreiben’e otomatik düşer.
-
-
-
-
-
-
-AI_COVER_LETTER_PROVIDER != "openai" ise:
-
-
-Direkt template kullanılır.
-
-
-
-
-Kullanılan veriler:
-
-
-cv_sections = build_cv_sections(cv, posting) ile üretilen yapı:
-
-
-profil
-
-
-kenntnisse
-
-
-erfahrung
-
-
-ausbildung
-
-
-hinweise
-
-
-diagnostik (opsiyonel):
-diagnostik = {
-    "matched_skills": [...],  # hem CV’de hem ilanda geçen güçlü yanlar
-    "missing_skills": [...]   # ilanda olup CV’de olmayanlar
-}
-
-
-
-
-
-AI tarafındaki önemli kurallar (prompt ile zorlanıyor):
-
-
-Sadece JSON içindeki bilgilere dayanarak yazar,
-
-
-“Bilmiyorum, eksiğim” tarzı negatif cümleler yazmamalı,
-
-
-diagnostik.matched_skills → gerçek “Schwerpunkte”,
-
-
-diagnostik.missing_skills → sadece “öğrenme hedefi / weiter ausbauen” şeklinde geçebilir, asla mevcut güç gibi lanse edilmez.
-
-
-Fallback template:
-
-
-AI çalışmasa bile:
-
-
-“Meine Schwerpunkte liegen unter anderem in …” cümlesinde
-
-
-Öncelikle diagnostik.matched_skills kullanılır,
-
-
-missing_skills listeye hiç alınmaz,
-
-
-Maksimum 6 skill gösterilir.
-
-
-
-
-
-
-Admin tarafında:
-
-
-JobPosting listesinde action:
-
-
-Taslak oluştur (CV bölümleri + Anschreiben)
-
-
-
-
-Bu action:
-
-
-İlanın hedef alanına göre uygun CV’yi seçer,
-
-
-build_cv_sections + build_cover_letter çağırır,
-
-
-ApplicationDraft kaydı oluşturur/günceller:
-
-
-cv_sections JSON
-
-
-cover_letter metni
-
-
-language = "de"
-
-
-
-
-
-
-
-Logging
-OpenAI ile ilgili hatalar şu modüllerde loglanır:
-
-
-ai_bridge.services:
-
-
-İlan parsing (ai_extract_posting)
-
-
-CV parsing (ai_extract_cv)
-
-
-
-
-applicant_letters.services:
-
-
-AI tabanlı Anschreiben (build_cover_letter)
-
-
-
-
-Geliştirme sırasında konsolda görebileceğin tipik log’lar:
-
-
-OpenAI job posting extraction failed; falling back to heuristics.
-
-
-OpenAI CV extraction failed; falling back to heuristics.
-
-
-OpenAI cover letter generation failed; falling back to template.
-
-
-Bu log’ları gördüğünde kontrol etmen gerekenler:
-
-
-OPENAI_API_KEY gerçekten set mi?
-
-
-Kullanılan model adları (OPENAI_MODEL_*) geçerli mi?
-
-
-Gerekirse AI_PROVIDER ve AI_COVER_LETTER_PROVIDER geçici olarak "stub" yapılarak sistem saf heuristik + template modunda çalıştırılabilir.
+📍 Tarayıcıda `http://127.0.0.1:8000` adresine gidin.
+
+---
+
+## 🔐 AI Konfigürasyonu
+
+### Kullanıcı Ayarları (Önerilen Yöntem)
+
+1. **Giriş yapın** ve `/ai/settings/` adresine gidin
+2. **AI Sağlayıcı** seçin:
+   - **OpenAI**: GPT-4o-mini (en kararlı sonuçlar)
+   - **Gemini**: Google AI, hızlı ve ücretsiz quota
+   - **Groq**: Çok hızlı, açık kaynak modeller (Llama3)
+3. **API Key** girin:
+   - OpenAI: `sk-...` ([platform.openai.com](https://platform.openai.com/api-keys))
+   - Gemini: `AIza...` ([aistudio.google.com](https://aistudio.google.com/))
+   - Groq: `gsk_...` ([console.groq.com](https://console.groq.com/))
+4. **Model** (opsiyonel):
+   - OpenAI: `gpt-4o-mini`, `gpt-4o`, `gpt-4-turbo`
+   - Gemini: `gemini-1.5-flash`, `gemini-1.5-pro`
+   - Groq: `llama-3.3-70b-versatile`, `mixtral-8x7b-32768`
+
+### Güvenlik
+- ✅ API key'ler **otomatik şifrelenir** (Fernet encryption)
+- ✅ Veritabanında **plain text saklanmaz**
+- ✅ Her kullanıcı **kendi key'ini** kullanır
+- ⚠️ `.env` dosyasını **asla** git'e eklemeyin!
+
+---
+
+## 📖 Kullanım
+
+### 1. CV Oluşturma
+
+**Dashboard** → **Neuen CV anlegen**
+- İsim, alan (Web/BWL/Genel), iletişim bilgileri girin
+- **AI Import** ile ham CV metnini yapılandırılmış veriye çevirin
+
+### 2. Hızlı Başvuru
+
+**Schnellbewerbung** menüsünden:
+1. İlan metnini yapıştırın
+2. Hedef alanı seçin (Web/BWL/Genel)
+3. **Analysieren** tıklayın
+4. Sonuçlar:
+   - 🎯 **Match Score**: CV-İlan uyum yüzdesi
+   - 📊 **Skills Analizi**: Eşleşen ve eksik yetenekler
+   - ✉️ **Anschreiben**: Hazır Almanca ön yazı
+   - 📄 **CV Blöcke**: ATS uyumlu kopyala-yapıştır bölümleri
+
+### 3. Geçmiş İşlemler
+
+**Historie** menüsünden:
+- Tüm başvuru taslakları
+- Her bir başvurunun detayları
+- Anschreiben'ları tekrar görüntüleme
+
+---
+
+## 🧪 Testler
+
+### Tüm Testleri Çalıştırma
+```bash
+pytest
+```
+
+### Kapsam Raporu
+```bash
+pytest --cov=. --cov-report=html
+```
+
+### Modül Bazlı Test
+```bash
+pytest cv_manager/tests.py
+pytest job_analyzer/tests.py
+pytest ai_bridge/tests.py
+pytest applicant_letters/tests.py
+```
+
+### Beklenen Sonuçlar
+- ✅ 50+ test case
+- ✅ %80+ kod kapsamı
+- ✅ Model, view, servis testleri
+
+---
+
+## 📁 Proje Yapısı
+
+```
+py_JobAutomation/
+├── cv_manager/          # CV yönetim modülü
+│   ├── models.py        # CV, Skill, Experience, Education, Language
+│   ├── views.py         # Dashboard, CRUD işlemleri
+│   ├── forms.py         # Django form tanımları
+│   ├── urls.py          # URL routing
+│   └── tests.py         # Unit testler
+│
+├── job_analyzer/        # İlan analiz motoru
+│   ├── models.py        # JobPosting modeli
+│   ├── views.py         # Schnellbewerbung view
+│   ├── services.py      # Heuristic parser, skorlama
+│   └── tests.py         # Servis testleri
+│
+├── ai_bridge/           # AI entegrasyon katmanı
+│   ├── models.py        # UserAISettings, ExtractionSnapshot
+│   ├── providers.py     # OpenAI/Gemini/Groq provider'ları
+│   ├── services.py      # AI extraction servisleri
+│   ├── encryption.py    # API key şifreleme
+│   ├── views.py         # Ayarlar sayfası
+│   └── tests.py         # Provider testleri
+│
+├── applicant_letters/   # Anschreiben üretimi
+│   ├── models.py        # ApplicationDraft
+│   ├── services.py      # Cover letter builder
+│   └── tests.py         # Letter generation testleri
+│
+├── templates/           # HTML şablonları
+│   ├── base.html        # Ana layout
+│   └── [app_templates]  # App-specific templates
+│
+├── py_JobAutomation/    # Django proje ayarları
+│   ├── settings.py      # Genel konfigürasyon
+│   └── urls.py          # Root URL conf
+│
+├── requirements.txt     # Python bağımlılıkları
+├── env.example          # Örnek environment dosyası
+├── .gitignore           # Git ignore kuralları
+└── README.md            # Bu dosya
+```
+
+---
+
+## 🎯 Özellikler Roadmap
+
+### Tamamlanan
+- ✅ Multi-provider AI desteği
+- ✅ API key encryption
+- ✅ Comprehensive test suite
+- ✅ Template fallback sistemi
+- ✅ User-based settings
+
+### Gelecek Özellikler
+- [ ] PDF Export (CV + Anschreiben)
+- [ ] Email otomasyonu
+- [ ] İlan takip sistemi (başvuru durumu)
+- [ ] Çoklu dil desteği (Türkçe, İngilizce)
+- [ ] Celery ile async AI işlemleri
+- [ ] Dashboard analytics
+
+---
+
+## 🔧 Geliştirme
+
+### Code Quality Tools
+```bash
+# Code formatting
+black .
+
+# Linting
+flake8
+
+# Import sorting
+isort .
+```
+
+### Migration Oluşturma
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+### Static Files
+```bash
+python manage.py collectstatic
+```
+
+---
+
+## 🤝 Katkıda Bulunma
+
+Bu proje şu an **private** bir repodur. Katkı yapmak için:
+
+1. Issue açın (özellik talebi veya bug report)
+2. Fork + Pull Request gönderin
+3. Testlerinizi ekleyin
+4. Code style kurallarına uyun
+
+---
+
+## 📜 Lisans
+
+**Private Project** - Tüm hakları saklıdır.
+
+---
+
+## 📧 İletişim
+
+Sorularınız için GitHub Issues kullanın.
+
+---
+
+## 🙏 Teşekkürler
+
+Bu proje aşağıdaki teknolojiler sayesinde geliştirilmiştir:
+- Django Framework
+- OpenAI API
+- Google Gemini
+- Groq
+- Bootstrap
+- Font Awesome
+
+---
+
+**Son Güncelleme**: Ocak 2026  
+**Versiyon**: 2.0
