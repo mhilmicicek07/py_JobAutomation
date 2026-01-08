@@ -32,36 +32,60 @@
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
     <div class="container">
-        <a class="navbar-brand" href="{% url 'dashboard' %}">
+        <a class="navbar-brand" href="{% if user.is_authenticated %}{% url 'cv_manager:dashboard' %}{% else %}{% url 'users:login' %}{% endif %}">
             <i class="fa-solid fa-robot me-2"></i>JobAutomation
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
+            {% if user.is_authenticated %}
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'dashboard' %}">CVs</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'quick_apply' %}">Schnellbewerbung</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'application_history' %}">Historie</a>
-                </li>
-            </ul>
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'ai_settings' %}">
-                        <i class="fa-solid fa-gear me-1"></i> Einstellungen
+                    <a class="nav-link" href="{% url 'cv_manager:dashboard' %}">
+                        <i class="fa-solid fa-file-alt me-1"></i>CVs
                     </a>
                 </li>
-                {% if user.is_authenticated %}
                 <li class="nav-item">
-                    <span class="nav-link disabled text-light opacity-50">
-                        <i class="fa-solid fa-user me-1"></i> {{ user.username }}
-                    </span>
+                    <a class="nav-link" href="{% url 'job_analyzer:quick_apply' %}">
+                        <i class="fa-solid fa-rocket me-1"></i>Schnellbewerbung
+                    </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'job_analyzer:application_history' %}">
+                        <i class="fa-solid fa-history me-1"></i>Historie
+                    </a>
+                </li>
+            </ul>
+            {% endif %}
+            <ul class="navbar-nav ms-auto">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'ai_bridge:settings' %}">
+                            <i class="fa-solid fa-gear me-1"></i>Einstellungen
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-link text-light">
+                            <i class="fa-solid fa-user me-1"></i>{{ user.username }}
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:logout' %}">
+                            <i class="fa-solid fa-sign-out-alt me-1"></i>Abmelden
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:login' %}">
+                            <i class="fa-solid fa-sign-in-alt me-1"></i>Anmelden
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:register' %}">
+                            <i class="fa-solid fa-user-plus me-1"></i>Registrieren
+                        </a>
+                    </li>
                 {% endif %}
             </ul>
         </div>

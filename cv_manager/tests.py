@@ -108,20 +108,20 @@ class CVViewsTest(TestCase):
     
     def test_dashboard_view(self):
         """Dashboard sayfasına erişim testi"""
-        response = self.client.get(reverse('dashboard'))
+        response = self.client.get(reverse('cv_manager:dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Test User")
     
     def test_cv_detail_view(self):
         """CV detay sayfası testi"""
-        response = self.client.get(reverse('cv_detail', args=[self.cv.pk]))
+        response = self.client.get(reverse('cv_manager:cv_detail', args=[self.cv.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.cv.full_name)
     
     def test_add_skill_view(self):
         """Skill ekleme testi"""
         response = self.client.post(
-            reverse('add_skill', args=[self.cv.pk]),
+            reverse('cv_manager:add_skill', args=[self.cv.pk]),
             {'name': 'Python', 'level': 'advanced'}
         )
         self.assertEqual(response.status_code, 302)  # Redirect
@@ -138,7 +138,7 @@ class CVCRUDTest(TestCase):
     
     def test_create_cv(self):
         """CV oluşturma testi"""
-        response = self.client.post(reverse('cv_create'), {
+        response = self.client.post(reverse('cv_manager:cv_create'), {
             'full_name': 'New User',
             'field': 'BWL',
             'email': 'new@example.com',
@@ -150,6 +150,6 @@ class CVCRUDTest(TestCase):
     def test_delete_cv(self):
         """CV silme testi"""
         cv = CV.objects.create(user=self.user, full_name="To Delete", field="GEN")
-        response = self.client.post(reverse('cv_delete', args=[cv.pk]))
+        response = self.client.post(reverse('cv_manager:cv_delete', args=[cv.pk]))
         self.assertEqual(response.status_code, 302)
         self.assertFalse(CV.objects.filter(pk=cv.pk).exists())

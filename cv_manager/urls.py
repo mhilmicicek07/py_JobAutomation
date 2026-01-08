@@ -1,6 +1,8 @@
 from django.urls import path
 from .views import *
 
+app_name = 'cv_manager'
+
 urlpatterns = [
     # Ana İşlemler
     path("", dashboard, name="dashboard"),

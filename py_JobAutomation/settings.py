@@ -31,6 +31,7 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 # Application definition
 
 INSTALLED_APPS = [
+    'users',
     'cv_manager',
     'job_analyzer',
     'applicant_letters',
@@ -146,3 +147,8 @@ OPENAI_MODEL_LETTER = "gpt-4o-mini"     # Cover letter / Anschreiben
 
 # Sadece Anschreiben için ayrı provider (yoksa AI_PROVIDER kullanılır)
 AI_COVER_LETTER_PROVIDER = "openai"
+
+# ── Authentication ayarları ───────────────────────────────────────────────────
+LOGIN_URL = '/users/login/'
+LOGIN_REDIRECT_URL = '/cv/'
+LOGOUT_REDIRECT_URL = '/users/login/'

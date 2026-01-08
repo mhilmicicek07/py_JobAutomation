@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Kayıt Ol - py_JobAutomation{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <i class="fas fa-user-plus fa-3x text-success mb-3"></i>
+                    <h2 class="card-title">Kayıt Ol</h2>
+                    <p class="text-muted">Yeni hesap oluşturun</p>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">
+                            <i class="fas fa-user me-1"></i> Kullanıcı Adı
+                        </label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.username.errors }}
+                            </div>
+                        {% else %}
+                            <div class="form-text">
+                                150 karakter veya daha az. Harfler, rakamlar ve @/./+/-/_ kullanılabilir.
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.password1.id_for_label }}" class="form-label">
+                            <i class="fas fa-lock me-1"></i> Şifre
+                        </label>
+                        {{ form.password1 }}
+                        {% if form.password1.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.password1.errors }}
+                            </div>
+                        {% else %}
+                            <div class="form-text">
+                                <ul class="mb-0 ps-3">
+                                    <li>Şifreniz en az 8 karakter olmalıdır</li>
+                                    <li>Sadece rakamlardan oluşmamalıdır</li>
+                                    <li>Çok yaygın bir şifre olmamalıdır</li>
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.password2.id_for_label }}" class="form-label">
+                            <i class="fas fa-lock me-1"></i> Şifre (Tekrar)
+                        </label>
+                        {{ form.password2 }}
+                        {% if form.password2.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.password2.errors }}
+                            </div>
+                        {% else %}
+                            <div class="form-text">
+                                Doğrulama için şifrenizi tekrar girin.
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Kayıt Ol
+                        </button>
+                    </div>
+                </form>
+
+                <hr>
+
+                <div class="text-center">
+                    <p class="mb-0">
+                        Zaten hesabınız var mı? 
+                        <a href="{% url 'users:login' %}" class="text-decoration-none">
+                            <i class="fas fa-sign-in-alt me-1"></i>
+                            Giriş Yap
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-3">
+            <small class="text-muted">
+                <i class="fas fa-shield-alt me-1"></i>
+                Verileriniz güvende
+            </small>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 15px;
+    }
+    .form-control {
+        border-radius: 10px;
+        padding: 12px;
+    }
+    .btn-lg {
+        border-radius: 10px;
+        padding: 12px;
+    }
+    .form-text ul {
+        font-size: 0.875em;
+    }
+</style>
+{% endblock %}
