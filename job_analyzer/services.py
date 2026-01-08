@@ -69,14 +69,28 @@ def extract_requirements(raw_text: str, target_field: str) -> Dict[str, List[str
     experience = _canonicalize_skills(experience)
     return {"skills": skills, "experience": experience}
 
-def get_primary_cv_or_fallback(field: str):
+def get_primary_cv_or_fallback(field: str, user=None):
     """
     Önce is_primary=True ve eşleşen alan, sonra alan eşleşmesi, sonra GEN, en son herhangi biri.
+    Kullanıcıya göre filtreler. Eğer tek CV varsa direkt onu döndürür.
     """
     from cv_manager.models import CV  # lazy import
-    q = CV.objects
+    
+    # Kullanıcıya göre filtrele
+    if user and user.is_authenticated:
+        q = CV.objects.filter(user=user)
+    else:
+        q = CV.objects.all()
+    
+    # Eğer sadece 1 CV varsa direkt onu döndür (alan önemli değil)
+    cv_count = q.count()
+    if cv_count == 1:
+        return q.first()
+    
+    if cv_count == 0:
+        return None
 
-    # Öncelik sırası
+    # Öncelik sırası (çoklu CV varsa)
     obj = q.filter(field=field, is_primary=True).first()
     if obj:
         return obj

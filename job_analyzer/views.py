@@ -23,14 +23,23 @@ class QuickApplyForm(forms.Form):
 
     target_field = forms.ChoiceField(
         choices=FIELD_CHOICES,
-        label="Zielbereich",
+        label="CV Alanı",
         initial="WEB",
+        required=False,
+        help_text="Welches CV soll für die Analyse verwendet werden?"
     )
     raw_text = forms.CharField(
         label="Stellenanzeige (Volltext)",
         widget=forms.Textarea(attrs={"rows": 16}),
         help_text="Komplette Anzeige hier einfügen (z. B. von einem Jobportal).",
     )
+    
+    def __init__(self, *args, user=None, cv_count=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Eğer sadece 1 CV varsa field seçimini gizle
+        if cv_count == 1:
+            self.fields['target_field'].widget = forms.HiddenInput()
+            self.fields['target_field'].required = False
 
 
 @login_required
@@ -79,23 +88,36 @@ def application_detail(request, pk):
     result["sections"] = sections
 
     # Formu göstermeye gerek yok, sadece sonucu gösteriyoruz
+    from cv_manager.models import CV
+    user_cvs = CV.objects.filter(user=request.user)
+    cv_count = user_cvs.count()
+    
     return render(request, "job_analyzer/quick_apply.html", {
-        "form": QuickApplyForm(), # Boş form, hata vermemesi için
+        "form": QuickApplyForm(user=request.user, cv_count=cv_count), # Boş form, hata vermemesi için
         "result": result,
-        "readonly": True # Template'de 'Analiz' butonunu gizlemek için kullanılabilir
+        "readonly": True, # Template'de 'Analiz' butonunu gizlemek için kullanılabilir
+        "cv_count": cv_count,
+        "show_field_selection": cv_count > 1,
     })
 
 
 @login_required
 @require_http_methods(["GET", "POST"])
 def quick_apply(request):
+    from cv_manager.models import CV
+    
     result: Dict[str, Any] | None = None
+    
+    # Kullanıcının CV sayısını kontrol et
+    user_cvs = CV.objects.filter(user=request.user)
+    cv_count = user_cvs.count()
+    show_field_selection = cv_count > 1
 
     if request.method == "POST":
-        form = QuickApplyForm(request.POST)
+        form = QuickApplyForm(request.POST, user=request.user, cv_count=cv_count)
         if form.is_valid():
             raw_text = form.cleaned_data["raw_text"]
-            target_field = form.cleaned_data["target_field"]
+            target_field = form.cleaned_data.get("target_field", "GEN")
 
             # 1. İlanı kaydet
             posting = JobPosting.objects.create(
@@ -115,8 +137,8 @@ def quick_apply(request):
             posting.extracted_skills = skills
             posting.extracted_experience = experience
             
-            # Skorlama
-            cv = ja_services.get_primary_cv_or_fallback(target_field)
+            # Skorlama - Kullanıcıya göre CV seç
+            cv = ja_services.get_primary_cv_or_fallback(target_field, user=request.user)
             score = ja_services.score_posting_against_cv(cv, skills)
             decision = ja_services.decision_from_score(score)
 
@@ -183,7 +205,7 @@ def quick_apply(request):
                 "draft": draft,
             }
     else:
-        form = QuickApplyForm()
+        form = QuickApplyForm(user=request.user, cv_count=cv_count)
 
     return render(
         request,
@@ -191,5 +213,7 @@ def quick_apply(request):
         {
             "form": form,
             "result": result,
+            "cv_count": cv_count,
+            "show_field_selection": show_field_selection,
         },
     )

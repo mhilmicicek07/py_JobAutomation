@@ -14,7 +14,14 @@ class CV(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="cvs", null=True, blank=True)
     
     full_name = models.CharField(max_length=120)
-    field = models.CharField(max_length=3, choices=FIELD_CHOICES, default="GEN")
+    field = models.CharField(
+        max_length=3, 
+        choices=FIELD_CHOICES, 
+        default="GEN",
+        blank=True,
+        null=True,
+        help_text="Opsiyonel: Sadece çoklu CV kullanıyorsanız seçin"
+    )
     is_primary = models.BooleanField(default=False, help_text="Bu alan için ana/master CV")
     email = models.EmailField(blank=True)
     phone = models.CharField(max_length=40, blank=True)

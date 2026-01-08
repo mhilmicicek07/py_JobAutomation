@@ -13,10 +13,23 @@
                 <form method="post">
                     {% csrf_token %}
                     
+                    {% if show_field_selection %}
                     <div class="mb-3">
-                        <label class="form-label fw-bold">{{ form.target_field.label }}</label>
+                        <label class="form-label fw-bold">
+                            <i class="fa-solid fa-folder-tree me-1"></i>{{ form.target_field.label }}
+                        </label>
                         {{ form.target_field }}
+                        <small class="form-text text-muted d-block mt-1">
+                            Sie haben {{ cv_count }} CVs - Welches soll verwendet werden?
+                        </small>
                     </div>
+                    {% else %}
+                    {{ form.target_field }}
+                    <div class="alert alert-info mb-3">
+                        <i class="fa-solid fa-info-circle me-2"></i>
+                        <strong>Ihr CV wird automatisch verwendet</strong>
+                    </div>
+                    {% endif %}
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">{{ form.raw_text.label }}</label>
