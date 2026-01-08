@@ -8,7 +8,7 @@
         <h1 class="h3 mb-0 text-gray-800">Meine Lebensläufe</h1>
         <p class="text-muted small mb-0">Verwalten Sie hier Ihre CV-Profile.</p>
     </div>
-    <a href="{% url 'cv_create' %}" class="btn btn-success">
+    <a href="{% url 'cv_manager:cv_create' %}" class="btn btn-success">
         <i class="fa-solid fa-plus me-2"></i>Neuen CV anlegen
     </a>
 </div>
@@ -43,13 +43,13 @@
                 </div>
 
                 <div class="d-flex gap-2">
-                    <a href="{% url 'cv_detail' cv.pk %}" class="btn btn-sm btn-primary flex-grow-1">
+                    <a href="{% url 'cv_manager:cv_detail' cv.pk %}" class="btn btn-sm btn-primary flex-grow-1">
                         <i class="fa-solid fa-gear me-1"></i> Verwalten
                     </a>
-                    <a href="{% url 'cv_import' cv.pk %}" class="btn btn-sm btn-outline-dark" title="AI Import">
+                    <a href="{% url 'cv_manager:cv_import' cv.pk %}" class="btn btn-sm btn-outline-dark" title="AI Import">
                         <i class="fa-solid fa-robot"></i> AI
                     </a>
-                    <a href="{% url 'cv_delete' cv.pk %}" class="btn btn-sm btn-outline-danger" title="Löschen">
+                    <a href="{% url 'cv_manager:cv_delete' cv.pk %}" class="btn btn-sm btn-outline-danger" title="Löschen">
                         <i class="fa-solid fa-trash"></i>
                     </a>
                 </div>
@@ -62,7 +62,7 @@
             <i class="fa-regular fa-folder-open fa-3x text-muted mb-3"></i>
             <h4>Noch keine CVs vorhanden</h4>
             <p class="text-muted">Erstellen Sie Ihren ersten Lebenslauf, um loszulegen.</p>
-            <a href="{% url 'cv_create' %}" class="btn btn-primary mt-2">Jetzt erstellen</a>
+            <a href="{% url 'cv_manager:cv_create' %}" class="btn btn-primary mt-2">Jetzt erstellen</a>
         </div>
     </div>
     {% endfor %}

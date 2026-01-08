@@ -23,7 +23,7 @@ def cv_create(request):
             cv.user = request.user
             cv.save()
             # Oluşturduktan sonra detay sayfasına yönlendir
-            return redirect("cv_detail", pk=cv.pk)
+            return redirect("cv_manager:cv_detail", pk=cv.pk)
     else:
         form = CVForm()
     return render(request, "cv_manager/cv_form.html", {"form": form})
@@ -36,7 +36,7 @@ def cv_update(request, pk):
         form = CVForm(request.POST, instance=cv)
         if form.is_valid():
             form.save()
-            return redirect("cv_detail", pk=cv.pk)
+            return redirect("cv_manager:cv_detail", pk=cv.pk)
     else:
         form = CVForm(instance=cv)
     return render(request, "cv_manager/cv_form.html", {"form": form, "cv": cv})
@@ -56,7 +56,7 @@ def cv_import(request, pk):
             stats = ai_services.apply_cv_snapshot(cv, snapshot)
 
             messages.success(request, f"AI-Import fertig: {stats.get('skills',0)} Skills.")
-            return redirect("cv_detail", pk=cv.pk)
+            return redirect("cv_manager:cv_detail", pk=cv.pk)
     else:
         form = CVImportForm()
     return render(request, "cv_manager/cv_import.html", {"form": form, "cv": cv})
@@ -67,7 +67,7 @@ def cv_delete(request, pk):
     if request.method == "POST":
         cv.delete()
         messages.success(request, f"CV '{cv.full_name}' gelöscht.")
-        return redirect("dashboard")
+        return redirect("cv_manager:dashboard")
     return render(request, "cv_manager/cv_delete_confirm.html", {"cv": cv})
 
 
@@ -102,7 +102,7 @@ def add_experience(request, cv_id):
             exp.cv = cv
             exp.save()
             messages.success(request, "Berufserfahrung hinzugefügt.")
-            return redirect("cv_detail", pk=cv.pk)
+            return redirect("cv_manager:cv_detail", pk=cv.pk)
     else:
         form = ExperienceForm()
     return render(request, "cv_manager/item_form.html", {"form": form, "title": "Erfahrung hinzufügen"})
@@ -116,7 +116,7 @@ def edit_experience(request, cv_id, exp_id):
         if form.is_valid():
             form.save()
             messages.success(request, "Berufserfahrung aktualisiert.")
-            return redirect("cv_detail", pk=cv.pk)
+            return redirect("cv_manager:cv_detail", pk=cv.pk)
     else:
         form = ExperienceForm(instance=exp)
     return render(request, "cv_manager/item_form.html", {"form": form, "title": "Erfahrung bearbeiten"})
@@ -143,7 +143,7 @@ def add_education(request, cv_id):
             edu.cv = cv
             edu.save()
             messages.success(request, "Ausbildung hinzugefügt.")
-            return redirect("cv_detail", pk=cv.pk)
+            return redirect("cv_manager:cv_detail", pk=cv.pk)
     else:
         form = EducationForm()
     return render(request, "cv_manager/item_form.html", {"form": form, "title": "Ausbildung hinzufügen"})
@@ -157,7 +157,7 @@ def edit_education(request, cv_id, edu_id):
         if form.is_valid():
             form.save()
             messages.success(request, "Ausbildung aktualisiert.")
-            return redirect("cv_detail", pk=cv.pk)
+            return redirect("cv_manager:cv_detail", pk=cv.pk)
     else:
         form = EducationForm(instance=edu)
     return render(request, "cv_manager/item_form.html", {"form": form, "title": "Ausbildung bearbeiten"})
@@ -188,7 +188,7 @@ def add_skill(request, cv_id):
                 messages.success(request, f"Skill '{skill.name}' hinzugefügt.")
             except Exception:
                 messages.warning(request, "Dieser Skill existiert bereits.")
-            return redirect("cv_detail", pk=cv.pk)
+            return redirect("cv_manager:cv_detail", pk=cv.pk)
     return redirect("cv_detail", pk=cv.pk)
 
 @login_required
@@ -212,7 +212,7 @@ def add_language(request, cv_id):
             lang.cv = cv
             lang.save()
             messages.success(request, f"Sprache '{lang.name}' hinzugefügt.")
-            return redirect("cv_detail", pk=cv.pk)
+            return redirect("cv_manager:cv_detail", pk=cv.pk)
     return redirect("cv_detail", pk=cv.pk)
 
 @login_required

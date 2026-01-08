@@ -13,10 +13,10 @@
             </div>
         </div>
         <div class="d-flex gap-2">
-            <a href="{% url 'cv_update' cv.pk %}" class="btn btn-outline-primary">
+            <a href="{% url 'cv_manager:cv_update' cv.pk %}" class="btn btn-outline-primary">
                 <i class="fa-solid fa-pen"></i> Kopfdaten bearbeiten
             </a>
-            <a href="{% url 'cv_import' cv.pk %}" class="btn btn-dark">
+            <a href="{% url 'cv_manager:cv_import' cv.pk %}" class="btn btn-dark">
                 <i class="fa-solid fa-robot me-1"></i> AI Import
             </a>
         </div>
@@ -27,7 +27,7 @@
     <div class="col-lg-7 mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4 class="mb-0"><i class="fa-solid fa-briefcase me-2 text-secondary"></i>Berufserfahrung</h4>
-            <a href="{% url 'add_experience' cv.pk %}" class="btn btn-sm btn-success">
+            <a href="{% url 'cv_manager:add_experience' cv.pk %}" class="btn btn-sm btn-success">
                 <i class="fa-solid fa-plus"></i> Hinzufügen
             </a>
         </div>
@@ -36,7 +36,7 @@
         <div class="card mb-3 shadow-sm hover-shadow">
             <div class="card-body position-relative">
                 <div class="position-absolute top-0 end-0 p-3">
-                    <a href="{% url 'edit_experience' cv.pk exp.pk %}" class="btn btn-sm btn-outline-secondary border-0" title="Bearbeiten">
+                    <a href="{% url 'cv_manager:edit_experience' cv.pk exp.pk %}" class="btn btn-sm btn-outline-secondary border-0" title="Bearbeiten">
                         <i class="fa-solid fa-pen"></i>
                     </a>
                     <button type="button" class="btn btn-sm btn-outline-danger border-0" data-bs-toggle="modal" data-bs-target="#deleteExpModal{{ exp.pk }}" title="Löschen">
@@ -71,7 +71,7 @@
                         Möchten Sie die Erfahrung bei <strong>{{ exp.company }}</strong> wirklich löschen?
                     </div>
                     <div class="modal-footer">
-                        <form action="{% url 'delete_experience' cv.pk exp.pk %}" method="post">
+                        <form action="{% url 'cv_manager:delete_experience' cv.pk exp.pk %}" method="post">
                             {% csrf_token %}
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
                             <button type="submit" class="btn btn-danger">Löschen</button>
@@ -92,7 +92,7 @@
         <div class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 class="mb-0"><i class="fa-solid fa-graduation-cap me-2 text-secondary"></i>Ausbildung</h4>
-                <a href="{% url 'add_education' cv.pk %}" class="btn btn-sm btn-success">
+                <a href="{% url 'cv_manager:add_education' cv.pk %}" class="btn btn-sm btn-success">
                     <i class="fa-solid fa-plus"></i>
                 </a>
             </div>
@@ -101,8 +101,8 @@
             <div class="card mb-2 shadow-sm">
                 <div class="card-body py-2 px-3 position-relative">
                     <div class="position-absolute top-50 end-0 translate-middle-y me-2">
-                        <a href="{% url 'edit_education' cv.pk edu.pk %}" class="text-secondary me-2"><i class="fa-solid fa-pen"></i></a>
-                        <form action="{% url 'delete_education' cv.pk edu.pk %}" method="post" style="display:inline;">
+                        <a href="{% url 'cv_manager:edit_education' cv.pk edu.pk %}" class="text-secondary me-2"><i class="fa-solid fa-pen"></i></a>
+                        <form action="{% url 'cv_manager:delete_education' cv.pk edu.pk %}" method="post" style="display:inline;">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-link text-danger p-0 border-0"><i class="fa-solid fa-xmark"></i></button>
                         </form>
@@ -125,7 +125,7 @@
             
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <form action="{% url 'add_language' cv.pk %}" method="post" class="row g-2 align-items-center mb-3">
+                    <form action="{% url 'cv_manager:add_language' cv.pk %}" method="post" class="row g-2 align-items-center mb-3">
                         {% csrf_token %}
                         <div class="col-6">
                             <input type="text" name="name" class="form-control form-control-sm" placeholder="Sprache (z. B. Englisch)" required>
@@ -155,7 +155,7 @@
                                 <span class="fw-bold">{{ lang.name }}</span>
                                 <span class="badge bg-light text-dark border ms-2">{{ lang.get_level_display }}</span>
                             </div>
-                            <form action="{% url 'delete_language' cv.pk lang.pk %}" method="post" style="display:inline;">
+                            <form action="{% url 'cv_manager:delete_language' cv.pk lang.pk %}" method="post" style="display:inline;">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Löschen">
                                     <i class="fa-solid fa-trash-can"></i>
@@ -175,7 +175,7 @@
             
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <form action="{% url 'add_skill' cv.pk %}" method="post" class="row g-2 align-items-center mb-3">
+                    <form action="{% url 'cv_manager:add_skill' cv.pk %}" method="post" class="row g-2 align-items-center mb-3">
                         {% csrf_token %}
                         <div class="col-8">
                             <input type="text" name="name" class="form-control form-control-sm" placeholder="Neuer Skill (z. B. Docker)" required>
@@ -189,7 +189,7 @@
                         {% for skill in skills %}
                         <div class="badge bg-light text-dark border p-2 d-flex align-items-center">
                             <span class="me-2">{{ skill.name }}</span>
-                            <form action="{% url 'delete_skill' cv.pk skill.pk %}" method="post" style="display:inline;">
+                            <form action="{% url 'cv_manager:delete_skill' cv.pk skill.pk %}" method="post" style="display:inline;">
                                 {% csrf_token %}
                                 <button type="submit" class="btn-close btn-close-white" style="width: 0.5em; height: 0.5em; filter: none; color: red;" aria-label="Close"></button>
                             </form>
