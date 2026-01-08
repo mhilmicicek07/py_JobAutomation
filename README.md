@@ -5,7 +5,8 @@
 
 [![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-5.2.7-green.svg)](https://www.djangoproject.com/)
-[![License](https://img.shields.io/badge/License-Private-red.svg)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/badge/Tests-56%20passed-brightgreen.svg)]()
 
 ---
 
@@ -75,7 +76,7 @@ python --version  # >= 3.13
 
 ### 2. Projeyi Klonlayın
 ```bash
-git clone https://github.com/yourusername/py_JobAutomation.git
+git clone https://github.com/mhilmicicek07/py_JobAutomation.git
 cd py_JobAutomation
 ```
 
@@ -300,24 +301,43 @@ python manage.py collectstatic
 
 ## 🤝 Katkıda Bulunma
 
-Bu proje şu an **private** bir repodur. Katkı yapmak için:
+Katkılarınızı bekliyoruz! Katkı yapmak için:
 
-1. Issue açın (özellik talebi veya bug report)
-2. Fork + Pull Request gönderin
-3. Testlerinizi ekleyin
-4. Code style kurallarına uyun
+1. Bu projeyi **fork** edin
+2. Yeni bir **branch** oluşturun (`git checkout -b feature/amazing-feature`)
+3. Değişikliklerinizi **commit** edin (`git commit -m 'feat: Add amazing feature'`)
+4. Branch'inizi **push** edin (`git push origin feature/amazing-feature`)
+5. **Pull Request** açın
+
+### Katkı Kuralları
+- ✅ Testlerinizi ekleyin
+- ✅ Code style kurallarına uyun (black, flake8)
+- ✅ Commit mesajlarınızı anlamlı yazın
+- ✅ Dokümantasyonu güncelleyin
 
 ---
 
 ## 📜 Lisans
 
-**Private Project** - Tüm hakları saklıdır.
+Bu proje **MIT License** ile lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakın.
+
+---
+
+## 👨‍💻 Geliştirici
+
+**Mehmet Hilmi Çiçek**
+
+- GitHub: [@mhilmicicek07](https://github.com/mhilmicicek07)
+- Repository: [py_JobAutomation](https://github.com/mhilmicicek07/py_JobAutomation)
 
 ---
 
 ## 📧 İletişim
 
-Sorularınız için GitHub Issues kullanın.
+Sorularınız, önerileriniz veya hata bildirimleri için:
+- **GitHub Issues** kullanın
+- **Pull Request** açabilirsiniz
+- **Discussions** bölümünden tartışabilirsiniz
 
 ---
 
