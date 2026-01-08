@@ -20,7 +20,10 @@ class UserAISettingsTest(TestCase):
             model_name="gpt-4o-mini"
         )
         self.assertEqual(settings.provider, "openai")
-        self.assertEqual(settings.api_key, "sk-test123")
+        # API key otomatik şifreleniyor, decrypted halini kontrol et
+        self.assertEqual(settings.get_decrypted_api_key(), "sk-test123")
+        # Şifrelenmiş halde 'gAAAAA' ile başlamalı
+        self.assertTrue(settings.api_key.startswith("gAAAAA"))
     
     def test_settings_str(self):
         """__str__ metodu testi"""
