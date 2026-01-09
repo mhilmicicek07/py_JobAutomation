@@ -16,8 +16,7 @@ python-decouple>=3.8
 # API Security & Encryption
 cryptography>=41.0.0
 
-# Database (production)
-psycopg2-binary>=2.9.9
+# Database (SQLite for development - production optional)
 
 # Testing
 pytest>=7.4.0

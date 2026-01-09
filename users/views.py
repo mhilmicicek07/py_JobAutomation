@@ -19,7 +19,11 @@ def register_view(request):
             return redirect('cv_manager:dashboard')
     else:
         form = UserCreationForm()
-    
+
+    # Bootstrap class ekle
+    for field_name in form.fields:
+        form.fields[field_name].widget.attrs.update({'class': 'form-control'})
+
     return render(request, 'users/register.html', {'form': form})
 
 

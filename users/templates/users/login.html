@@ -35,6 +35,10 @@
                             <div class="text-danger small mt-1">
                                 {{ form.username.errors }}
                             </div>
+                        {% else %}
+                            <div class="form-text">
+                                Test için: user1
+                            </div>
                         {% endif %}
                     </div>
 
@@ -46,6 +50,10 @@
                         {% if form.password.errors %}
                             <div class="text-danger small mt-1">
                                 {{ form.password.errors }}
+                            </div>
+                        {% else %}
+                            <div class="form-text">
+                                Test için: kullanici123.
                             </div>
                         {% endif %}
                     </div>
@@ -72,12 +80,13 @@
             </div>
         </div>
 
-        <div class="text-center mt-3">
-            <small class="text-muted">
-                <i class="fas fa-shield-alt me-1"></i>
-                Güvenli ve şifreli giriş
-            </small>
-        </div>
+
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Güvenli ve şifreli giriş
+                    </small>
+                </div>
     </div>
 </div>
 
