@@ -1,0 +1,1 @@
+web: gunicorn py_JobAutomation.wsgi:application --log-file -
