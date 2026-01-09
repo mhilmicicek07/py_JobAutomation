@@ -45,14 +45,16 @@ class QuickApplyForm(forms.Form):
 @login_required
 def application_history(request):
     """Geçmiş başvuruları listeler."""
-    drafts = ApplicationDraft.objects.select_related("cv", "posting").order_by("-created_at")
+    drafts = ApplicationDraft.objects.select_related("cv", "posting").filter(
+        cv__user=request.user
+    ).order_by("-created_at")
     return render(request, "job_analyzer/history.html", {"drafts": drafts})
 
 
 @login_required
 def application_detail(request, pk):
     """Geçmiş bir başvurunun detayını gösterir."""
-    draft = get_object_or_404(ApplicationDraft, pk=pk)
+    draft = get_object_or_404(ApplicationDraft, pk=pk, cv__user=request.user)
     # Sonuçları quick_apply template yapısına uygun hazırlayalım
     result = {
         "posting": draft.posting,
@@ -125,22 +127,44 @@ def quick_apply(request):
                 target_field=target_field
             )
 
-            # 2. AI veya Heuristik Analiz
-            data = ai_services.ai_extract_posting(posting, user=request.user)
+            # CV'yi al
+            cv = ja_services.get_primary_cv_or_fallback(target_field, user=request.user)
+            cv_text = cv.get_full_text()  # CV'nin tüm detaylarını içeren kapsamlı metin
 
-            if not data.get("skills") and not data.get("experience"):
-                data = ja_services.extract_requirements(raw_text, target_field)
+            # 1. Önce AI ile tam karşılaştırma dene
+            comparison = ai_services.ai_compare_cv_job(cv_text, raw_text, user=request.user)
 
-            skills = data.get("skills") or []
-            experience = data.get("experience") or []
+            # AI başarılı oldu mu kontrol et
+            if comparison.get("match_score", 0) > 0 and comparison.get("reasoning"):
+                # AI başarılı - AI sonuçlarını kullan
+                skills = comparison.get("matched_skills", [])
+                experience = []  # AI karşılaştırma için gerekli değil
+                score = comparison.get("match_score", 0)
+                reasoning = comparison.get("reasoning", "")
+                decision = comparison.get("decision", "REVIEW")
+
+                print("✅ AI Comparison Successful")
+            else:
+                # AI başarısız - Heuristic fallback kullan
+                print("⚠️ AI Comparison Failed, Using Heuristic Fallback")
+
+                # Heuristic ile beceri çıkar
+                heuristic_data = ja_services.extract_requirements(raw_text, target_field)
+                skills = heuristic_data.get("skills", [])
+                experience = heuristic_data.get("experience", [])
+
+                # Eski yöntemle skor hesapla
+                score = ja_services.score_posting_against_cv(cv, skills)
+                decision = ja_services.decision_from_score(score)
+                reasoning = f"Fallback: Heuristic analysis - {len(skills)} skills extracted"
+
+            # Debug
+            print(f"Final Result: Score={score}, Decision={decision}")
+            print(f"Reasoning: {reasoning}")
+            print(f"Skills: {skills}")
 
             posting.extracted_skills = skills
             posting.extracted_experience = experience
-            
-            # Skorlama - Kullanıcıya göre CV seç
-            cv = ja_services.get_primary_cv_or_fallback(target_field, user=request.user)
-            score = ja_services.score_posting_against_cv(cv, skills)
-            decision = ja_services.decision_from_score(score)
 
             posting.match_score = score
             posting.decision = decision

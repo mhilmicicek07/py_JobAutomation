@@ -35,6 +35,79 @@ class CV(models.Model):
 
     def __str__(self):
         return f"{self.full_name} ({self.field})"
+
+    def get_full_text(self):
+        """
+        CV'nin tüm detaylarını içeren kapsamlı metin döndürür.
+        AI karşılaştırma için kullanılır.
+        """
+        text_parts = []
+
+        # Temel bilgiler
+        text_parts.append(f"Name: {self.full_name}")
+        if self.email:
+            text_parts.append(f"Email: {self.email}")
+        if self.phone:
+            text_parts.append(f"Phone: {self.phone}")
+        if self.address:
+            text_parts.append(f"Address: {self.address}")
+        if self.github:
+            text_parts.append(f"GitHub: {self.github}")
+
+        # Eğitim
+        if self.educations.exists():
+            text_parts.append("\nEDUCATION:")
+            for edu in self.educations.all():
+                edu_line = f"- {edu.degree} at {edu.institution}"
+                if edu.start_date:
+                    edu_line += f" ({edu.start_date.year}"
+                    if edu.end_date:
+                        edu_line += f" - {edu.end_date.year}"
+                    elif edu.status == "ongoing":
+                        edu_line += " - Present"
+                    edu_line += ")"
+                text_parts.append(edu_line)
+
+        # Deneyim
+        if self.experiences.exists():
+            text_parts.append("\nPROFESSIONAL EXPERIENCE:")
+            for exp in self.experiences.all():
+                exp_line = f"- {exp.title} at {exp.company}"
+                if exp.start_date:
+                    exp_line += f" ({exp.start_date.year}"
+                    if exp.end_date:
+                        exp_line += f" - {exp.end_date.year}"
+                    else:
+                        exp_line += " - Present"
+                    exp_line += ")"
+                if exp.description:
+                    exp_line += f"\n  {exp.description}"
+                text_parts.append(exp_line)
+
+        # Beceriler
+        if self.skills.exists():
+            text_parts.append("\nSKILLS:")
+            skills = [skill.name for skill in self.skills.all()]
+            text_parts.append(", ".join(skills))
+
+        # Sertifikalar
+        if self.certifications.exists():
+            text_parts.append("\nCERTIFICATIONS:")
+            for cert in self.certifications.all():
+                cert_line = f"- {cert.name}"
+                if cert.issuer:
+                    cert_line += f" ({cert.issuer})"
+                if cert.date_issued:
+                    cert_line += f" - {cert.date_issued.year}"
+                text_parts.append(cert_line)
+
+        # Diller
+        if self.languages.exists():
+            text_parts.append("\nLANGUAGES:")
+            for lang in self.languages.all():
+                text_parts.append(f"- {lang.name}: {lang.level}")
+
+        return "\n".join(text_parts)
     
 class Education(models.Model):
     cv = models.ForeignKey(CV, on_delete=models.CASCADE, related_name="educations")

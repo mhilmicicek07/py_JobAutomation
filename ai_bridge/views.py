@@ -20,7 +20,7 @@ def settings_view(request):
             form.save()
             messages.success(request, "AI Ayarlarınız başarıyla kaydedildi.")
             # Formu kaydettikten sonra aynı sayfaya yönlendir (PRG pattern)
-            return redirect("ai_settings")
+            return redirect("ai_bridge:ai_settings")
     else:
         form = AISettingsForm(instance=user_settings)
 

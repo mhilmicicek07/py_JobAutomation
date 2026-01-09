@@ -60,6 +60,36 @@ def ai_extract_cv(cv_source, user):
         return {}
 
 
+def ai_compare_cv_job(cv_text, job_text, user):
+    """
+    CV ve iş ilanını karşılaştırır, match score döndürür.
+    """
+    provider = get_provider(user)
+
+    if not cv_text or not job_text:
+        return {"match_score": 0, "reasoning": "Missing CV or job text"}
+
+    system_prompt = (
+        "You are an expert HR recruiter. Compare the CV with the job posting and provide a match score. "
+        "Return a JSON object with keys: "
+        "'match_score' (integer 0-100, how well the candidate fits the job), "
+        "'reasoning' (string explaining the score), "
+        "'matched_skills' (list of skills that match), "
+        "'missing_skills' (list of required skills the candidate lacks), "
+        "'decision' (string: 'APPLY' if score >=80, 'REVIEW' if score >=50, 'SKIP' otherwise). "
+        "Be realistic - consider experience, skills, and job requirements."
+    )
+
+    user_prompt = f"CV:\n{cv_text}\n\nJOB POSTING:\n{job_text}"
+
+    try:
+        result = provider.extract_json(user_prompt, system_prompt)
+        return result
+    except Exception as e:
+        logger.error(f"AI comparison failed: {e}")
+        return {"match_score": 0, "reasoning": "AI comparison failed", "decision": "SKIP"}
+
+
 # ── 2. BÖLÜM: VERİTABANI İŞLEMLERİ (APPLY) ────────────────────────────────────
 
 def _parse_date_str(date_str):

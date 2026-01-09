@@ -33,10 +33,14 @@
 - ✅ Process tracking (Çalışma izni, istifa, ehliyet vs.)
 
 ### 🔍 İlan Analizi (`job_analyzer`)
+- ✅ **AI-Powered Tam CV-İlan Karşılaştırma**: Bağlam, deneyim, eğitim değerlendirmesi
 - ✅ Otomatik beceri/deneyim çıkarımı (AI + heuristic fallback)
-- ✅ CV-İlan eşleşme skoru (0-100)
+- ✅ CV-İlan eşleşme skoru (0-100) - Gerçekçi HR değerlendirmesi
 - ✅ Akıllı karar verme: **APPLY** (≥80), **REVIEW** (≥50), **SKIP** (<50)
+- ✅ **Fallback Sistemi**: AI çalışmazsa otomatik heuristic yedek
 - ✅ Hızlı başvuru ekranı (tek tıkla analiz + Anschreiben)
+- ✅ **Dynamic CV Selection**: 1 CV varsa gizle, çok CV varsa göster
+- ✅ Başvuru geçmişi ve detay görüntüleme
 
 ### ✍️ Başvuru Mektubu (`applicant_letters`)
 - ✅ **Almanca Anschreiben** üretimi (AI veya template)
@@ -125,7 +129,21 @@ python manage.py runserver
 
 ---
 
+## ⚠️ **Önemli: AI API Anahtarı Gereklidir**
+
+Bu uygulamanın temel özelliklerini (CV import, iş analizi, otomatik mektup oluşturma) kullanabilmek için **AI API anahtarı** gereklidir:
+
+1. **OpenAI** (Önerilen): Ücretsiz $5 kredi ile başlayın
+2. **Google Gemini**: Ücretsiz kota
+3. **Groq**: Çok hızlı, açık kaynak modeller
+
+Giriş yaptıktan sonra **"Einstellungen"** menüsünden API anahtarınızı ayarlayın.
+
+---
+
 ## 🔐 AI Konfigürasyonu
+
+> ⚠️ **API Anahtarı olmadan AI özellikler çalışmaz!** CV import, iş analizi ve otomatik mektup üretimi için API anahtarı zorunludur.
 
 ### Kullanıcı Ayarları (Önerilen Yöntem)
 
@@ -153,30 +171,47 @@ python manage.py runserver
 
 ## 📖 Kullanım
 
-### 1. CV Oluşturma
+### 1. Kullanıcı Kaydı ve Giriş
+
+- **Kayıt**: `/users/register/` sayfasından hesap oluşturun
+- **Giriş**: `/users/login/` ile oturum açın
+- **Güvenlik**: Her kullanıcı kendi verilerini görür
+
+### 2. AI Ayarları Yapılandırma
+
+**"Einstellungen"** menüsünden:
+1. AI Sağlayıcı seçin (OpenAI, Gemini, Groq)
+2. API anahtarınızı girin
+3. Model seçin (opsiyonel - varsayılan kullanılır)
+
+### 3. CV Oluşturma
 
 **Dashboard** → **Neuen CV anlegen**
 - İsim, alan (Web/BWL/Genel), iletişim bilgileri girin
 - **AI Import** ile ham CV metnini yapılandırılmış veriye çevirin
+- Eğitim, deneyim, beceriler, diller ekleyin
 
-### 2. Hızlı Başvuru
+### 4. Hızlı Başvuru (AI-Powered)
 
 **Schnellbewerbung** menüsünden:
 1. İlan metnini yapıştırın
-2. Hedef alanı seçin (Web/BWL/Genel)
+2. **CV alanı otomatik seçilir** (1 CV varsa gizli, çok CV varsa görünür)
 3. **Analysieren** tıklayın
-4. Sonuçlar:
-   - 🎯 **Match Score**: CV-İlan uyum yüzdesi
-   - 📊 **Skills Analizi**: Eşleşen ve eksik yetenekler
+4. **AI Tam Karşılaştırma**:
+   - 🎯 **Gerçekçi Match Score** (0-100): Bağlam, deneyim, eğitim değerlendirmesi
+   - 📊 **Detaylı Reasoning**: Neden bu skor? Eksiklikler neler?
+   - 🤖 **AI Karar**: APPLY/REVIEW/SKIP
+   - ⚡ **Fallback Sistemi**: AI çalışmazsa otomatik heuristic yedek
+5. **Otomatik Üretim**:
    - ✉️ **Anschreiben**: Hazır Almanca ön yazı
    - 📄 **CV Blöcke**: ATS uyumlu kopyala-yapıştır bölümleri
 
-### 3. Geçmiş İşlemler
+### 5. Başvuru Geçmişi
 
 **Historie** menüsünden:
-- Tüm başvuru taslakları
-- Her bir başvurunun detayları
-- Anschreiben'ları tekrar görüntüleme
+- Kullanıcının kendi başvuruları listesi
+- Her başvurunun detaylarına tıklayarak görüntüleme
+- Anschreiben ve CV bölümlerini tekrar inceleme
 
 ---
 

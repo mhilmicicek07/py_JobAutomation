@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +21,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure--xe48(mb(%6i_vrvu@!2dw3!935@x5_d#l_x+%bwsbo8d7!y+7'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure--xe48(mb(%6i_vrvu@!2dw3!935@x5_d#l_x+%bwsbo8d7!y+7')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
 
 # Application definition
@@ -129,24 +130,26 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Skor eşikleri
-JOB_MATCH_THRESHOLDS = {"APPLY": 80, "REVIEW": 50}
+JOB_MATCH_THRESHOLDS = {
+    "APPLY": int(os.environ.get('JOB_MATCH_THRESHOLD_APPLY', '80')),
+    "REVIEW": int(os.environ.get('JOB_MATCH_THRESHOLD_REVIEW', '50'))  # Gerçekçi threshold'a döndük
+}
 
 # ── AI / LLM ayarları ─────────────────────────────────────────────────────────
 
 # Genel AI sağlayıcı ayarı
-# Şimdilik 'stub' kalsın, fonksiyonları yazdıktan sonra 'openai' yaparız.
-AI_PROVIDER = "openai"   # "openai" / "stub"
+AI_PROVIDER = os.environ.get('AI_PROVIDER', 'openai')
 
 # Varsayılan model
-OPENAI_DEFAULT_MODEL = "gpt-4o-mini"
+OPENAI_DEFAULT_MODEL = os.environ.get('OPENAI_DEFAULT_MODEL', 'gpt-4o-mini')
 
-# İstersen ileride bunları farklı da yapabiliriz ama şimdilik hepsi aynı:
-OPENAI_MODEL_CV = "gpt-4o-mini"         # CV extraction
-OPENAI_MODEL_POSTING = "gpt-4o-mini"    # Job posting extraction
-OPENAI_MODEL_LETTER = "gpt-4o-mini"     # Cover letter / Anschreiben
+# Model ayarları
+OPENAI_MODEL_CV = os.environ.get('OPENAI_MODEL_CV', 'gpt-4o-mini')         # CV extraction
+OPENAI_MODEL_POSTING = os.environ.get('OPENAI_MODEL_POSTING', 'gpt-4o-mini')    # Job posting extraction
+OPENAI_MODEL_LETTER = os.environ.get('OPENAI_MODEL_LETTER', 'gpt-4o-mini')     # Cover letter / Anschreiben
 
 # Sadece Anschreiben için ayrı provider (yoksa AI_PROVIDER kullanılır)
-AI_COVER_LETTER_PROVIDER = "openai"
+AI_COVER_LETTER_PROVIDER = os.environ.get('AI_COVER_LETTER_PROVIDER', 'openai')
 
 # ── Authentication ayarları ───────────────────────────────────────────────────
 LOGIN_URL = '/users/login/'

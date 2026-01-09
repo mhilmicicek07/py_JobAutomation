@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import *
 from .forms import *
-from ai_bridge.models import CVSource
+from ai_bridge.models import CVSource, UserAISettings
 from ai_bridge import services as ai_services
 
 # ── MEVCUT VİEW'LAR (DOKUNULMADI) ─────────────────────────────────────────────
@@ -12,6 +12,27 @@ from ai_bridge import services as ai_services
 @login_required
 def dashboard(request):
     cvs = CV.objects.filter(user=request.user).order_by("full_name", "field")
+
+    # AI ayarları kontrolü - eğer ayarlanmadıysa uyarı göster
+    try:
+        ai_settings = request.user.ai_settings
+        if not ai_settings.api_key:
+            messages.warning(
+                request,
+                '⚠️ <strong>AI-Funktionen nicht verfügbar!</strong> '
+                'Bitte konfigurieren Sie Ihre AI-Einstellungen unter '
+                '<a href="{% url "ai_bridge:ai_settings" %}" class="alert-link">Einstellungen</a>, '
+                'um CV-Import und Bewerbungsanalysen zu nutzen.'
+            )
+    except UserAISettings.DoesNotExist:
+        messages.warning(
+            request,
+            '⚠️ <strong>AI-Funktionen nicht verfügbar!</strong> '
+            'Bitte konfigurieren Sie Ihre AI-Einstellungen unter '
+            '<a href="{% url "ai_bridge:ai_settings" %}" class="alert-link">Einstellungen</a>, '
+            'um CV-Import und Bewerbungsanalysen zu nutzen.'
+        )
+
     return render(request, "cv_manager/dashboard.html", {"cvs": cvs})
 
 @login_required

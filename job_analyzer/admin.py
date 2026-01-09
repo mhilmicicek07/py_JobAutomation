@@ -10,22 +10,36 @@ from applicant_letters import services as letter_services
 
 @admin.action(description="🔍 İlanı AI ile analiz et ve puanla")
 def analyze_postings_with_ai(modeladmin, request, queryset):
-    """AI kullanarak ilan analizi yapar"""
+    """AI kullanarak ilan analizi yapar (AI başarısız olursa heuristic fallback)"""
     ok = 0
-    for obj in queryset:
-        # AI extraction dene
-        data = ai_services.ai_extract_posting(obj, user=request.user)
-        
-        # AI başarısız olursa heuristic'e düş
-        if not data.get("skills"):
-            data = services.extract_requirements(obj.raw_text, obj.target_field)
-        
-        skills = data.get("skills", [])
-        experience = data.get("experience", [])
+    ai_success = 0
+    fallback_used = 0
 
+    for obj in queryset:
         cv = services.get_primary_cv_or_fallback(obj.target_field)
-        score = services.score_posting_against_cv(cv, skills)
-        decision = services.decision_from_score(score)
+        if not cv:
+            continue
+
+        cv_text = cv.get_full_text()
+
+        # Önce AI ile karşılaştırma dene
+        comparison = ai_services.ai_compare_cv_job(cv_text, obj.raw_text, user=request.user)
+
+        if comparison.get("match_score", 0) > 0 and comparison.get("reasoning"):
+            # AI başarılı
+            skills = comparison.get("matched_skills", [])
+            experience = []
+            score = comparison.get("match_score", 0)
+            decision = comparison.get("decision", "REVIEW")
+            ai_success += 1
+        else:
+            # AI başarısız - heuristic fallback
+            data = services.extract_requirements(obj.raw_text, obj.target_field)
+            skills = data.get("skills", [])
+            experience = data.get("experience", [])
+            score = services.score_posting_against_cv(cv, skills)
+            decision = services.decision_from_score(score)
+            fallback_used += 1
 
         obj.extracted_skills = skills
         obj.extracted_experience = experience
@@ -42,7 +56,7 @@ def analyze_postings_with_ai(modeladmin, request, queryset):
         )
         ok += 1
 
-    messages.success(request, f"{ok} ilan analiz edildi ve puanlandı.")
+    messages.success(request, f"{ok} ilan analiz edildi. AI başarılı: {ai_success}, Fallback: {fallback_used}")
 
 
 @admin.action(description="📝 İlanı sadece heuristik ile analiz et")

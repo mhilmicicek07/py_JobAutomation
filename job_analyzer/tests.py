@@ -50,7 +50,9 @@ class ExtractRequirementsTest(TestCase):
         self.assertIn("sap", skills)
         self.assertIn("sap fi", skills)
         self.assertIn("datev", skills)
-        self.assertIn("excel", skills)
+        self.assertIn("kreditorenbuchhaltung", skills)
+        # Excel artık ms-office olarak gruplanıyor
+        self.assertIn("ms-office", skills)
     
     def test_extract_with_empty_text(self):
         """Boş metin için çıkarım testi"""

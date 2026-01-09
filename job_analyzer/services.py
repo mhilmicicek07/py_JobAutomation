@@ -36,6 +36,48 @@ _CANON_MAP = {
     "api": "rest api",
     "unit tests": "unit test",
     "unittest": "unit test",
+    # CV-İş ilanı beceri eşleştirmesi
+    "it support": "it-support",
+    "unterstützung im it-support": "it-support",
+    "it-support (tickets, benutzerverwaltung)": "it-support",
+    "office organization": "büroorganisation",
+    "administrative unterstützung und büroorganisation": "büroorganisation",
+    "data management": "datenpflege",
+    "datenpflege in digitalen systemen (dms/e-akte)": "datenpflege",
+    "document control": "dokumentensteuerung",
+    "bearbeitung von schriftverkehr und behördenkontakten": "schriftverkehr",
+    "report creation": "berichterstellung",
+    "ms office arbeiten": "ms-office",
+    "windows applications": "ms-office",
+    "basic accounting": "buchhaltung",
+    "communication": "kommunikation",
+    "flexibility": "flexibilität",
+    "learning willingness": "lernbereitschaft",
+    "teamwork": "teamarbeit",
+    "user service": "benutzerservice",
+    "programming (python, django, javascript, sql)": "programmierung",
+    "web development": "webentwicklung",
+    # Ek eşleştirmeler
+    "administrative": "büroorganisation",
+    "report creation": "berichterstellung",
+    "document control": "dokumentensteuerung",
+    "data management": "datenpflege",
+    "user service": "benutzerservice",
+    "flexibility": "flexibilität",
+    "learning willingness": "lernbereitschaft",
+    "communication": "kommunikation",
+    "teamwork": "teamarbeit",
+    # MS Office alt becerileri
+    "word": "ms-office",
+    "excel": "ms-office",
+    "powerpoint": "ms-office",
+    "outlook": "ms-office",
+    "ms office": "ms-office",
+    # Diğer beceriler
+    "dms": "datenpflege",
+    "e akte": "datenpflege",
+    "benutzerverwaltung": "it-support",
+    "digitale tools": "datenpflege",
 }
 
 def _canonicalize_skills(skills: Iterable[str]) -> List[str]:
@@ -58,11 +100,24 @@ def _normalize_text(s: str) -> str:
 
 def extract_requirements(raw_text: str, target_field: str) -> Dict[str, List[str]]:
     """
-    İlan metninden kaba beceri/deneyim çıkarımı (anahtar kelime eşleşmesi).
+    İlan metninden akıllı beceri çıkarımı (anahtar kelime eşleşmesi + gruplama).
     """
     text = _normalize_text(raw_text)
     pool = SKILL_KEYWORDS.get(target_field, set()) | SKILL_KEYWORDS["GEN"]
-    skills = sorted({kw for kw in pool if kw in text})
+
+    # Önce tüm becerileri çıkar
+    found_skills = {kw for kw in pool if kw in text}
+
+    # Becerileri gruplandır (üst beceri varsa alt becerileri çıkar)
+    # MS Office grubu
+    ms_office_keywords = {"word", "excel", "powerpoint", "outlook", "ms office"}
+    if any(kw in found_skills for kw in ["ms office"] + list(ms_office_keywords)):
+        # MS Office varsa alt becerileri kaldır, sadece "ms office" tut
+        found_skills = (found_skills - ms_office_keywords) | {"ms office"}
+
+    # Diğer gruplamalar eklenebilir (ileride)
+
+    skills = sorted(found_skills)
     # MVP: experience çıkarımını aynı havuzdan dönüyoruz; ileride ayrı set kullanırız.
     experience = skills.copy()
     skills = _canonicalize_skills(skills)
@@ -107,7 +162,7 @@ def get_primary_cv_or_fallback(field: str, user=None):
 
 def score_posting_against_cv(cv, skills_needed: List[str]) -> int:
     """
-    Basit skor: CV.skills isimleri ile ilan becerileri kesişimi / ilan becerileri.
+    Akıllı skor: CV.skills isimleri ile ilan becerileri canonical eşleşmesi / ilan becerileri.
     0–100 arası tamsayı.
     """
     if not cv or not skills_needed:
@@ -117,13 +172,38 @@ def score_posting_against_cv(cv, skills_needed: List[str]) -> int:
     cv_skill_names = set(
         Skill.objects.filter(cv=cv).values_list("name", flat=True)
     )
-    cv_skill_norm = {s.lower() for s in cv_skill_names}
-    need_norm = {s.lower() for s in skills_needed}
 
-    matched = cv_skill_norm & need_norm
-    denom = len(need_norm) or 1
+    print(f"DEBUG: CV skills: {cv_skill_names}")
+    print(f"DEBUG: Job skills needed: {skills_needed}")
+
+    # Canonical eşleştirme uygula
+    cv_skill_canon = {_canonicalize_skill_name(s) for s in cv_skill_names}
+    need_canon = {_canonicalize_skill_name(s) for s in skills_needed}
+
+    print(f"DEBUG: CV canonical skills: {cv_skill_canon}")
+    print(f"DEBUG: Job canonical skills: {need_canon}")
+
+    matched = cv_skill_canon & need_canon
+    print(f"DEBUG: Matched canonical skills: {matched}")
+
+    denom = len(need_canon) or 1
     pct = round(100 * len(matched) / denom)
+    print(f"DEBUG: Score calculation: {len(matched)} / {denom} = {pct}%")
+
     return max(0, min(100, pct))
+
+def _canonicalize_skill_name(skill_name: str) -> str:
+    """
+    Becerileri canonical forma dönüştür (Almanca/İngilizce eşleştirmesi).
+    """
+    if not skill_name:
+        return ""
+
+    # Küçük harfe çevir ve normalize et
+    normalized = _normalize_text(skill_name)
+
+    # Canonical map'ten eşleşme bul
+    return _CANON_MAP.get(normalized, normalized)
 
 def decision_from_score(score: int | None) -> str:
     apply_t = getattr(settings, "JOB_MATCH_THRESHOLDS", {}).get("APPLY", 80)

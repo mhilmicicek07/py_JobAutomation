@@ -8,6 +8,17 @@
     <p class="text-muted">Kullanmak istediğiniz yapay zeka sağlayıcısını seçin.</p>
 
     <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+
+        <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+            <h6 style="color: #856404; margin: 0 0 10px 0;">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Wichtig: API-Schlüssel erforderlich
+            </h6>
+            <p style="color: #856404; margin: 0; font-size: 0.9em;">
+                Ohne API-Schlüssel funktionieren die KI-Funktionen nicht. Wählen Sie einen Anbieter und geben Sie Ihren Schlüssel ein.
+            </p>
+        </div>
+
         <form method="post">
             {% csrf_token %}
             
