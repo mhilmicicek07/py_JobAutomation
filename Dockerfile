@@ -1,41 +1,31 @@
-# Use Python 3.13 slim image
 FROM python:3.13-slim
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Set work directory
 WORKDIR /app
 
-# Install system dependencies
+# System deps (sqlite için ekstra bir şey gerekmez)
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        gcc \
-        postgresql-client \
-        libpq-dev \
+    && apt-get install -y --no-install-recommends gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project
 COPY . .
 
-# Create directories for logs and media
-RUN mkdir -p logs media staticfiles
+# Static + media dizinleri
+RUN mkdir -p staticfiles media logs
 
-# Create non-root user
+# Non-root user
 RUN addgroup --system django && adduser --system --ingroup django django
 RUN chown -R django:django /app
 USER django
 
-# Collect static files
-RUN python manage.py collectstatic --noinput --clear
+# Static collect
+RUN python manage.py collectstatic --noinput
 
-# Expose port
 EXPOSE 8000
 
-# Run the application
-CMD ["gunicorn", "py_JobAutomation.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+CMD ["gunicorn", "py_JobAutomation.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--access-logfile", "-", "--error-logfile", "-"]
