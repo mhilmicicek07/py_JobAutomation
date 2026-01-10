@@ -22,16 +22,25 @@
 - **Database**: SQLite
 - **Frontend**: Bootstrap 5, Font Awesome
 - **Testing**: pytest, coverage
+- **Containerization**: Docker, Docker Compose
 
 ## 🚀 Quick Start
+
+### 1️⃣ Clone & Setup
 
 ```bash
 git clone https://github.com/mhilmicicek07/py_JobAutomation.git
 cd py_JobAutomation
+```
 
+### 2️⃣ Using Virtual Environment (Optional, Local)
+
+```bash
 python -m venv venv
-venv\Scripts\activate  # Windows
-
+# Windows  
+venv\Scripts\activate
+# Linux / Mac
+# source venv/bin/activate
 pip install -r requirements.txt
 cp env.example .env
 python manage.py migrate
@@ -39,6 +48,17 @@ python manage.py createsuperuser
 pytest
 python manage.py runserver
 ```
+
+### 3️⃣ Using Docker (Recommended)
+
+```bash
+docker compose build --no-cache
+docker compose up -d
+docker compose logs -f web
+```
+
+Web servisi http://localhost:8000 üzerinde çalışıyor
+Worker timeout uyarıları olabilir; deploy sırasında --timeout parametresiyle ayarlanabilir
 
 ## 📖 Usage
 
@@ -54,6 +74,8 @@ For AI features, get API key from:
 - OpenAI: https://platform.openai.com/api-keys
 - Google Gemini: https://aistudio.google.com
 - Groq: https://console.groq.com
+
+⚠️ Note: The google.generativeai package is deprecated. Use google.genai instead.
 
 Add key to `/ai/settings/` after login.
 
