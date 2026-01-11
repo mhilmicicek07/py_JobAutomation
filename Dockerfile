@@ -28,4 +28,4 @@ RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
-CMD ["gunicorn", "py_JobAutomation.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--access-logfile", "-", "--error-logfile", "-"]
+CMD sh -c "python manage.py migrate && gunicorn py_JobAutomation.wsgi:application --bind 0.0.0.0:8000"
