@@ -1,6 +1,7 @@
 # 🤖 py_JobAutomation
 
 > **AI-powered job application automation system**
+> Canlı sürüm: https://py-jobautomation.onrender.com
 
 [![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-5.2.7-green.svg)](https://www.djangoproject.com/)
