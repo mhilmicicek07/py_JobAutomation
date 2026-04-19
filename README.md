@@ -33,6 +33,11 @@ Bu proje, iş arama sürecini kolaylaştırmak için geliştirilmiş, yapay zeka
 - 🛡️ **Yedekleme Sistemi**: AI servisleri ulaşılamaz olduğunda dahi çalışma yeteneği.
 - 📊 **Başvuru Geçmişi**: Tüm başvuru süreçlerini takip edebilme.
 
+### 🔧 Son Güncellemeler
+- Hızlı Başvuru (Quick Apply) artık kayıtlı CV yoksa veya seçilen alanla eşleşen bir CV bulunamazsa kullanıcıyı bilgilendirir ve işlem yapmaz.
+- AI ile içe aktarılan deneyimlerin başlangıç tarihi artık opsiyoneldir; tarih gönderilmemiş olsa bile kayıt tamamlanır.
+- Eğitim durumu alanı, modelde tanımlı `completed/ongoing` seçenekleriyle uyumlu olacak şekilde otomatik normalize edilir.
+
 ### 🛠️ Teknoloji Yığını
 - **Backend**: Django 5.2.7, Python 3.13
 - **AI**: OpenAI, Google Gemini, Groq
