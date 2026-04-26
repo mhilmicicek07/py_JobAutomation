@@ -131,7 +131,7 @@ class Experience(models.Model):
     cv = models.ForeignKey(CV, on_delete=models.CASCADE, related_name="experiences")
     title = models.CharField(max_length=140)
     company = models.CharField(max_length=160, blank=True)
-    start_date = models.DateField()
+    start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)  # None => aktuell
     description = models.TextField(blank=True)
 

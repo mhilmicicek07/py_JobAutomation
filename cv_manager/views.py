@@ -151,7 +151,7 @@ def delete_experience(request, cv_id, exp_id):
     if request.method == "POST":
         exp.delete()
         messages.success(request, "Eintrag gelöscht.")
-    return redirect("cv_detail", pk=cv.pk)
+    return redirect("cv_manager:cv_detail", pk=cv.pk)
 
 
 # ── EDUCATION CRUD ────────────────────────────────────────────────────────────
@@ -192,7 +192,7 @@ def delete_education(request, cv_id, edu_id):
     if request.method == "POST":
         edu.delete()
         messages.success(request, "Eintrag gelöscht.")
-    return redirect("cv_detail", pk=cv.pk)
+    return redirect("cv_manager:cv_detail", pk=cv.pk)
 
 
 # ── SKILL CRUD ────────────────────────────────────────────────────────────────
@@ -212,7 +212,7 @@ def add_skill(request, cv_id):
             except Exception:
                 messages.warning(request, "Dieser Skill existiert bereits.")
             return redirect("cv_manager:cv_detail", pk=cv.pk)
-    return redirect("cv_detail", pk=cv.pk)
+    return redirect("cv_manager:cv_detail", pk=cv.pk)
 
 @login_required
 def delete_skill(request, cv_id, skill_id):
@@ -221,7 +221,7 @@ def delete_skill(request, cv_id, skill_id):
     if request.method == "POST":
         skill.delete()
         messages.success(request, "Skill gelöscht.")
-    return redirect("cv_detail", pk=cv.pk)
+    return redirect("cv_manager:cv_detail", pk=cv.pk)
 
 # ── LANGUAGE CRUD ─────────────────────────────────────────────────────────────
 
@@ -236,7 +236,7 @@ def add_language(request, cv_id):
             lang.save()
             messages.success(request, f"Sprache '{lang.name}' hinzugefügt.")
             return redirect("cv_manager:cv_detail", pk=cv.pk)
-    return redirect("cv_detail", pk=cv.pk)
+    return redirect("cv_manager:cv_detail", pk=cv.pk)
 
 @login_required
 def delete_language(request, cv_id, lang_id):
@@ -245,4 +245,4 @@ def delete_language(request, cv_id, lang_id):
     if request.method == "POST":
         lang.delete()
         messages.success(request, "Sprache gelöscht.")
-    return redirect("cv_detail", pk=cv.pk)
+    return redirect("cv_manager:cv_detail", pk=cv.pk)

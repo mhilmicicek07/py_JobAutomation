@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 
 from django import forms
 from django.shortcuts import render, get_object_or_404
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 
@@ -121,6 +122,19 @@ def quick_apply(request):
             raw_text = form.cleaned_data["raw_text"]
             target_field = form.cleaned_data.get("target_field", "GEN")
 
+            if cv_count == 0:
+                messages.error(request, "Önce en az bir CV oluşturmalısınız.")
+                return render(
+                    request,
+                    "job_analyzer/quick_apply.html",
+                    {
+                        "form": form,
+                        "result": None,
+                        "cv_count": cv_count,
+                        "show_field_selection": show_field_selection,
+                    },
+                )
+
             # 1. İlanı kaydet
             posting = JobPosting.objects.create(
                 raw_text=raw_text,
@@ -129,6 +143,19 @@ def quick_apply(request):
 
             # CV'yi al
             cv = ja_services.get_primary_cv_or_fallback(target_field, user=request.user)
+            if not cv:
+                messages.error(request, "Seçili alana uygun bir CV bulunamadı.")
+                return render(
+                    request,
+                    "job_analyzer/quick_apply.html",
+                    {
+                        "form": form,
+                        "result": None,
+                        "cv_count": cv_count,
+                        "show_field_selection": show_field_selection,
+                    },
+                )
+
             cv_text = cv.get_full_text()  # CV'nin tüm detaylarını içeren kapsamlı metin
 
             # 1. Önce AI ile tam karşılaştırma dene

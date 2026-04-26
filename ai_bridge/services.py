@@ -168,12 +168,12 @@ def apply_cv_snapshot(cv, snapshot, merge=False):
             institution = edu.get("institution", "")
             start = _parse_date_str(edu.get("start"))
             end = _parse_date_str(edu.get("end"))
-            status = edu.get("status", "DONE")
+            status = edu.get("status", "completed")
             
             if isinstance(status, str) and status.lower() in ["ongoing", "current", "laufend"]:
-                status = "ONGOING"
+                status = "ongoing"
             else:
-                status = "DONE"
+                status = "completed"
 
             Education.objects.create(
                 cv=cv,
