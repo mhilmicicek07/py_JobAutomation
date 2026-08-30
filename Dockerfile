@@ -18,8 +18,8 @@ COPY . .
 # Static + media dizinleri
 RUN mkdir -p staticfiles media logs
 
-# Non-root user
-RUN addgroup --system django && adduser --system --ingroup django django
+# Non-root user — home dir açıkça tanımlanmazsa gunicorn hata verir
+RUN addgroup --system django && adduser --system --home /home/django --ingroup django django
 RUN chown -R django:django /app
 USER django
 

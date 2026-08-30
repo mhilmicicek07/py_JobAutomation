@@ -9,11 +9,13 @@ except ImportError:
     OpenAI = None
     OpenAIError = None
 
-# Google Gemini
+# Google Gemini (yeni SDK)
 try:
-    import google.generativeai as genai
+    from google import genai as google_genai
+    from google.genai import types as google_genai_types
 except ImportError:
-    genai = None
+    google_genai = None
+    google_genai_types = None
 
 # Groq
 try:
@@ -71,28 +73,27 @@ class GeminiProvider(BaseAIProvider):
     Google Gemini AI sağlayıcısı.
     """
     def extract_json(self, text: str, system_prompt: str) -> dict:
-        if not genai:
-            raise RuntimeError("Google Generative AI kütüphanesi yüklü değil. 'pip install google-generativeai' çalıştırın.")
-        
+        if not google_genai:
+            raise RuntimeError("Google GenAI kütüphanesi yüklü değil. 'pip install google-genai' çalıştırın.")
+
         if not self.api_key:
             raise ValueError("Gemini API Key eksik.")
 
         try:
-            genai.configure(api_key=self.api_key)
+            client = google_genai.Client(api_key=self.api_key)
             model_name = self.model_name if self.model_name else "gemini-1.5-flash"
-            model = genai.GenerativeModel(model_name)
-            
-            # Gemini için prompt birleştirme
+
             full_prompt = f"{system_prompt}\n\nLütfen aşağıdaki metni analiz et ve JSON formatında yanıt ver:\n\n{text}"
-            
-            response = model.generate_content(
-                full_prompt,
-                generation_config=genai.GenerationConfig(
+
+            response = client.models.generate_content(
+                model=model_name,
+                contents=full_prompt,
+                config=google_genai_types.GenerateContentConfig(
                     temperature=0.2,
-                    response_mime_type="application/json"
-                )
+                    response_mime_type="application/json",
+                ),
             )
-            
+
             return json.loads(response.text)
         except Exception as e:
             logger.error(f"Gemini API Hatası: {e}")
