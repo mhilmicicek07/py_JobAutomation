@@ -34,7 +34,7 @@ py_JobAutomation is a Django web application that streamlines the job applicatio
 |---|---|
 | Backend | Django 5.2.7, Python 3.13 |
 | AI providers | OpenAI (GPT-4o-mini default), Google Gemini (gemini-1.5-flash default), Groq (llama-3.3-70b-versatile default) |
-| Database | SQLite (default) |
+| Database | SQLite (default), PostgreSQL (via `DATABASE_URL`) |
 | Frontend | Bootstrap 5, Font Awesome |
 | Server | Gunicorn |
 | Testing | pytest, pytest-django, pytest-cov |
@@ -103,6 +103,7 @@ Copy `env.example` to `.env` and set the variables relevant to your deployment.
 | Variable | Default | Description |
 |---|---|---|
 | `SECRET_KEY` | insecure default | Django secret key — **must** be changed in production |
+| `DATABASE_URL` | *(unset — uses SQLite)* | PostgreSQL connection string (e.g. for Render/Neon); if unset, falls back to `db.sqlite3` |
 | `DEBUG` | `True` | Set to `False` in production |
 | `ALLOWED_HOSTS` | `*` | Comma-separated list of allowed hostnames |
 | `AI_PROVIDER` | `openai` | Global fallback AI provider (`openai`, `gemini`, `groq`) |
