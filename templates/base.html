@@ -1,36 +1,18 @@
+{% load i18n static %}
 <!doctype html>
 <html lang="de">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}JobAutomation{% endblock %}</title>
-    
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <style>
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        }
-        .navbar-brand {
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-        .card {
-            border: none;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
-        }
-        .main-container {
-            padding-top: 2rem;
-            padding-bottom: 4rem;
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/theme.css' %}">
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+<nav class="navbar navbar-expand-lg navbar-dark bg-brand sticky-top">
     <div class="container">
         <a class="navbar-brand" href="{% if user.is_authenticated %}{% url 'cv_manager:dashboard' %}{% else %}{% url 'users:login' %}{% endif %}">
             <i class="fa-solid fa-robot me-2"></i>JobAutomation
@@ -43,17 +25,17 @@
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'cv_manager:dashboard' %}">
-                        <i class="fa-solid fa-file-alt me-1"></i>CVs
+                        <i class="fa-solid fa-file-alt me-1"></i>{% trans "Lebensläufe" %}
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'job_analyzer:quick_apply' %}">
-                        <i class="fa-solid fa-rocket me-1"></i>Schnellbewerbung
+                        <i class="fa-solid fa-rocket me-1"></i>{% trans "Schnellbewerbung" %}
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'job_analyzer:application_history' %}">
-                        <i class="fa-solid fa-history me-1"></i>Historie
+                        <i class="fa-solid fa-history me-1"></i>{% trans "Historie" %}
                     </a>
                 </li>
             </ul>
@@ -62,7 +44,7 @@
                 {% if user.is_authenticated %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'ai_bridge:ai_settings' %}">
-                            <i class="fa-solid fa-gear me-1"></i>Einstellungen
+                            <i class="fa-solid fa-gear me-1"></i>{% trans "Einstellungen" %}
                         </a>
                     </li>
                     <li class="nav-item">
@@ -72,18 +54,18 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'users:logout' %}">
-                            <i class="fa-solid fa-sign-out-alt me-1"></i>Abmelden
+                            <i class="fa-solid fa-sign-out-alt me-1"></i>{% trans "Abmelden" %}
                         </a>
                     </li>
                 {% else %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'users:login' %}">
-                            <i class="fa-solid fa-sign-in-alt me-1"></i>Anmelden
+                            <i class="fa-solid fa-sign-in-alt me-1"></i>{% trans "Anmelden" %}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'users:register' %}">
-                            <i class="fa-solid fa-user-plus me-1"></i>Registrieren
+                            <i class="fa-solid fa-user-plus me-1"></i>{% trans "Registrieren" %}
                         </a>
                     </li>
                 {% endif %}
