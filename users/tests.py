@@ -17,7 +17,7 @@ class UserAuthenticationTest(TestCase):
         """Login sayfası GET isteği"""
         response = self.client.get(reverse('users:login'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Giriş Yap')
+        self.assertContains(response, 'Anmelden')
     
     def test_login_success(self):
         """Başarılı login"""
@@ -47,7 +47,7 @@ class UserAuthenticationTest(TestCase):
         """Register sayfası GET isteği"""
         response = self.client.get(reverse('users:register'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Kayıt Ol')
+        self.assertContains(response, 'Registrieren')
     
     def test_register_success(self):
         """Başarılı kayıt"""

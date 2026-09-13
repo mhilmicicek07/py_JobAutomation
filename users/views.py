@@ -2,10 +2,11 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib import messages
+from django.utils.translation import gettext as _
 
 
 def register_view(request):
-    """Kullanıcı kayıt sayfası"""
+    """Benutzer-Registrierungsseite"""
     if request.user.is_authenticated:
         return redirect('cv_manager:dashboard')
     
@@ -13,14 +14,13 @@ def register_view(request):
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            username = form.cleaned_data.get('username')
-            messages.success(request, f'Hesabınız oluşturuldu! Şimdi giriş yapabilirsiniz.')
+            messages.success(request, _('Ihr Konto wurde erstellt! Sie können sich jetzt anmelden.'))
             login(request, user)
             return redirect('cv_manager:dashboard')
     else:
         form = UserCreationForm()
 
-    # Bootstrap class ekle
+    # Bootstrap-Klasse hinzufügen
     for field_name in form.fields:
         form.fields[field_name].widget.attrs.update({'class': 'form-control'})
 
@@ -28,7 +28,7 @@ def register_view(request):
 
 
 def login_view(request):
-    """Kullanıcı giriş sayfası"""
+    """Benutzer-Anmeldeseite"""
     if request.user.is_authenticated:
         return redirect('cv_manager:dashboard')
     
@@ -40,17 +40,17 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
-                messages.success(request, f'Hoş geldiniz, {username}!')
+                messages.success(request, _('Willkommen, %(username)s!') % {'username': username})
                 next_url = request.GET.get('next', 'cv_manager:dashboard')
                 return redirect(next_url)
             else:
-                messages.error(request, 'Geçersiz kullanıcı adı veya şifre.')
+                messages.error(request, _('Ungültiger Benutzername oder Passwort.'))
         else:
-            messages.error(request, 'Geçersiz kullanıcı adı veya şifre.')
+            messages.error(request, _('Ungültiger Benutzername oder Passwort.'))
     else:
         form = AuthenticationForm()
     
-    # Bootstrap class ekle
+    # Bootstrap-Klasse hinzufügen
     for field_name in form.fields:
         form.fields[field_name].widget.attrs.update({'class': 'form-control'})
     
@@ -58,7 +58,7 @@ def login_view(request):
 
 
 def logout_view(request):
-    """Kullanıcı çıkış"""
+    """Benutzer-Abmeldung"""
     logout(request)
-    messages.info(request, 'Başarıyla çıkış yaptınız.')
+    messages.info(request, _('Sie wurden erfolgreich abgemeldet.'))
     return redirect('users:login')
