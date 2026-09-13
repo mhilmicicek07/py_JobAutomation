@@ -1,55 +1,60 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}AI Ayarları{% endblock %}
+{% block title %}{% trans "AI-Einstellungen" %}{% endblock %}
 
 {% block content %}
-<div style="max-width: 600px; margin: 0 auto;">
-    <h1>AI Konfigürasyonu</h1>
-    <p class="text-muted">Kullanmak istediğiniz yapay zeka sağlayıcısını seçin.</p>
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <h1 class="h3 mb-1">{% trans "AI-Konfiguration" %}</h1>
+        <p class="text-muted mb-4">{% trans "Wählen Sie den KI-Anbieter, den Sie verwenden möchten." %}</p>
 
-    <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
 
-        <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
-            <h6 style="color: #856404; margin: 0 0 10px 0;">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                Wichtig: API-Schlüssel erforderlich
-            </h6>
-            <p style="color: #856404; margin: 0; font-size: 0.9em;">
-                Ohne API-Schlüssel funktionieren die KI-Funktionen nicht. Wählen Sie einen Anbieter und geben Sie Ihren Schlüssel ein.
-            </p>
+                <div class="alert alert-warning d-flex align-items-start" role="alert">
+                    <i class="fa-solid fa-triangle-exclamation me-3 mt-1"></i>
+                    <div>
+                        <strong>{% trans "Wichtig: API-Schlüssel erforderlich" %}</strong>
+                        <p class="mb-0 small">
+                            {% trans "Ohne API-Schlüssel funktionieren die KI-Funktionen nicht. Wählen Sie einen Anbieter und geben Sie Ihren Schlüssel ein." %}
+                        </p>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% if field.errors %}
+                        <div class="text-danger small mt-1">{{ field.errors }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <div class="d-flex justify-content-end mt-4">
+                        <button type="submit" class="btn btn-success px-4">
+                            <i class="fa-solid fa-check me-1"></i> {% trans "Einstellungen speichern" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
 
-        <form method="post">
-            {% csrf_token %}
-            
-            {% for field in form %}
-            <div style="margin-bottom: 15px;">
-                <label style="font-weight: bold; display: block; margin-bottom: 5px;">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}
-                <small style="color: #666; display: block; margin-top: 5px;">{{ field.help_text }}</small>
-                {% endif %}
-                {% if field.errors %}
-                <div style="color: red; font-size: 0.9em;">{{ field.errors }}</div>
-                {% endif %}
-            </div>
-            {% endfor %}
-
-            <div style="margin-top: 20px; text-align: right;">
-                <button type="submit" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
-                    Ayarları Kaydet
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <div style="margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 6px;">
-        <strong>Bilgi:</strong>
-        <ul style="margin: 0; padding-left: 20px; font-size: 0.9em; color: #555;">
-            <li><strong>OpenAI:</strong> En kararlı sonuçlar (GPT-4o-mini önerilir).</li>
-            <li><strong>Gemini:</strong> Google API anahtarı gerektirir.</li>
-            <li><strong>Groq:</strong> Çok hızlıdır, açık kaynak modelleri (Llama3) kullanır.</li>
-        </ul>
+        <div class="alert alert-light border mt-3">
+            <strong>{% trans "Info:" %}</strong>
+            <ul class="mb-0 small">
+                <li><strong>OpenAI:</strong> {% trans "Stabilste Ergebnisse (GPT-4o-mini empfohlen)." %}</li>
+                <li><strong>Gemini:</strong> {% trans "Erfordert einen Google-API-Schlüssel." %}</li>
+                <li><strong>Groq:</strong> {% trans "Sehr schnell, nutzt Open-Source-Modelle (Llama3)." %}</li>
+            </ul>
+        </div>
     </div>
 </div>
 {% endblock %}
