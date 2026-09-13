@@ -8,7 +8,7 @@ from applicant_letters.models import ApplicationDraft
 from applicant_letters import services as letter_services
 
 
-@admin.action(description="🔍 İlanı AI ile analiz et ve puanla")
+@admin.action(description="🔍 Anzeige mit AI analysieren und bewerten")
 def analyze_postings_with_ai(modeladmin, request, queryset):
     """AI kullanarak ilan analizi yapar (AI başarısız olursa heuristic fallback)"""
     ok = 0
@@ -56,10 +56,10 @@ def analyze_postings_with_ai(modeladmin, request, queryset):
         )
         ok += 1
 
-    messages.success(request, f"{ok} ilan analiz edildi. AI başarılı: {ai_success}, Fallback: {fallback_used}")
+    messages.success(request, f"{ok} Anzeige(n) analysiert. AI erfolgreich: {ai_success}, Fallback: {fallback_used}")
 
 
-@admin.action(description="📝 İlanı sadece heuristik ile analiz et")
+@admin.action(description="📝 Anzeige nur heuristisch analysieren")
 def analyze_postings_heuristic(modeladmin, request, queryset):
     """Sadece heuristic parser kullanır (AI yok)"""
     ok = 0
@@ -87,10 +87,10 @@ def analyze_postings_heuristic(modeladmin, request, queryset):
         )
         ok += 1
 
-    messages.success(request, f"{ok} ilan heuristik ile analiz edildi.")
+    messages.success(request, f"{ok} Anzeige(n) heuristisch analysiert.")
 
 
-@admin.action(description="✍️ Taslak oluştur (CV bölümleri + Anschreiben)")
+@admin.action(description="✍️ Entwurf erstellen (CV-Abschnitte + Anschreiben)")
 def create_application_drafts(modeladmin, request, queryset):
     created_count = 0
     for obj in queryset:
@@ -110,7 +110,7 @@ def create_application_drafts(modeladmin, request, queryset):
         )
         created_count += 1
 
-    messages.success(request, f"{created_count} taslak oluşturuldu/güncellendi.")
+    messages.success(request, f"{created_count} Entwurf/Entwürfe erstellt/aktualisiert.")
 
 
 @admin.register(JobPosting)

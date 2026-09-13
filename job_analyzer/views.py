@@ -6,6 +6,7 @@ from django import forms
 from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.utils.translation import gettext, gettext_lazy as _
 from django.views.decorators.http import require_http_methods
 
 from .models import JobPosting
@@ -17,17 +18,17 @@ from applicant_letters.models import ApplicationDraft
 
 class QuickApplyForm(forms.Form):
     FIELD_CHOICES = [
-        ("WEB", "Webentwicklung / IT"),
-        ("BWL", "BWL / Finanzen"),
-        ("GEN", "Allgemein / Sonstiges"),
+        ("WEB", _("Webentwicklung / IT")),
+        ("BWL", _("BWL / Finanzen")),
+        ("GEN", _("Allgemein / Sonstiges")),
     ]
 
     target_field = forms.ChoiceField(
         choices=FIELD_CHOICES,
-        label="CV Alanı",
+        label=_("CV-Bereich"),
         initial="WEB",
         required=False,
-        help_text="Welches CV soll für die Analyse verwendet werden?"
+        help_text=_("Welches CV soll für die Analyse verwendet werden?")
     )
     raw_text = forms.CharField(
         label="Stellenanzeige (Volltext)",
@@ -123,7 +124,7 @@ def quick_apply(request):
             target_field = form.cleaned_data.get("target_field", "GEN")
 
             if cv_count == 0:
-                messages.error(request, "Önce en az bir CV oluşturmalısınız.")
+                messages.error(request, gettext("Sie müssen zuerst mindestens einen CV erstellen."))
                 return render(
                     request,
                     "job_analyzer/quick_apply.html",
@@ -144,7 +145,7 @@ def quick_apply(request):
             # CV'yi al
             cv = ja_services.get_primary_cv_or_fallback(target_field, user=request.user)
             if not cv:
-                messages.error(request, "Seçili alana uygun bir CV bulunamadı.")
+                messages.error(request, gettext("Für den gewählten Bereich wurde kein passender CV gefunden."))
                 return render(
                     request,
                     "job_analyzer/quick_apply.html",

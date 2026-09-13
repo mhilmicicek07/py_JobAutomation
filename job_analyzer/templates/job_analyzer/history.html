@@ -1,12 +1,13 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Bewerbungshistorie{% endblock %}
+{% block title %}{% trans "Bewerbungshistorie" %}{% endblock %}
 
 {% block content %}
 <div class="card shadow-sm">
     <div class="card-header bg-white py-3">
         <h5 class="mb-0 text-primary">
-            <i class="fa-solid fa-clock-rotate-left me-2"></i>Bewerbungshistorie
+            <i class="fa-solid fa-clock-rotate-left me-2"></i>{% trans "Bewerbungshistorie" %}
         </h5>
     </div>
     <div class="card-body p-0">
@@ -15,12 +16,12 @@
             <table class="table table-hover table-striped align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th class="ps-4">Datum</th>
-                        <th>CV Profil</th>
-                        <th>Zielbereich</th>
+                        <th class="ps-4">{% trans "Datum" %}</th>
+                        <th>{% trans "CV Profil" %}</th>
+                        <th>{% trans "Zielbereich" %}</th>
                         <th>Score</th>
-                        <th>Entscheidung</th>
-                        <th class="text-end pe-4">Aktionen</th>
+                        <th>{% trans "Entscheidung" %}</th>
+                        <th class="text-end pe-4">{% trans "Aktionen" %}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -28,7 +29,7 @@
                     <tr>
                         <td class="ps-4 text-muted small">
                             {{ draft.created_at|date:"d.m.Y" }} <br>
-                            {{ draft.created_at|date:"H:i" }} Uhr
+                            {{ draft.created_at|date:"H:i" }} {% trans "Uhr" %}
                         </td>
                         <td class="fw-bold text-dark">
                             {{ draft.cv.full_name }}
@@ -65,7 +66,7 @@
                         </td>
                         <td class="text-end pe-4">
                             <a href="{% url 'job_analyzer:application_detail' draft.pk %}" class="btn btn-sm btn-primary">
-                                <i class="fa-solid fa-folder-open me-1"></i> Öffnen
+                                <i class="fa-solid fa-folder-open me-1"></i> {% trans "Öffnen" %}
                             </a>
                         </td>
                     </tr>
@@ -75,7 +76,7 @@
         </div>
         {% else %}
         <div class="text-center py-5">
-            <p class="text-muted mb-0">Noch keine Bewerbungen vorhanden.</p>
+            <p class="text-muted mb-0">{% trans "Noch keine Bewerbungen vorhanden." %}</p>
         </div>
         {% endif %}
     </div>
