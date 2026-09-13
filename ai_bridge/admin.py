@@ -14,7 +14,7 @@ class ExtractionSnapshotAdmin(admin.ModelAdmin):
     search_fields = ("input_text",)
     readonly_fields = ("created_at",)
 
-@admin.action(description="AI: CV’den çıkar (snapshot kaydet)")
+@admin.action(description="AI: Aus CV extrahieren (Snapshot speichern)")
 def ai_extract_and_snapshot(modeladmin, request, queryset):
     ok = 0
     for src in queryset:
@@ -41,9 +41,9 @@ def ai_extract_and_snapshot(modeladmin, request, queryset):
                 status="ERR",
                 error_message=str(e),
             )
-    messages.success(request, f"{ok} kaynak için CV snapshot’ı oluşturuldu.")
+    messages.success(request, f"CV-Snapshot für {ok} Quelle(n) erstellt.")
 
-@admin.action(description="AI: Son CV snapshot’ını uygula (merge)")
+@admin.action(description="AI: Letzten CV-Snapshot anwenden (merge)")
 def apply_latest_cv_snapshot(modeladmin, request, queryset):
     ok = 0
     for src in queryset:
@@ -52,7 +52,7 @@ def apply_latest_cv_snapshot(modeladmin, request, queryset):
             continue
         services.apply_cv_snapshot(src.cv, snap.output, merge=True)
         ok += 1
-    messages.success(request, f"{ok} kaynak için snapshot uygulandı (merge).")
+    messages.success(request, f"Snapshot für {ok} Quelle(n) angewendet (merge).")
 
 @admin.register(CVSource)
 class CVSourceAdmin(admin.ModelAdmin):
