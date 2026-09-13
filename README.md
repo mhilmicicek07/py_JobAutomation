@@ -2,7 +2,7 @@
 
 **AI-Powered Job Application Automation System**
 
-Live demo: [py-jobautomation.onrender.com](https://py-jobautomation.onrender.com)
+Live demo: [py-jobautomation-qhs7.onrender.com](https://py-jobautomation-qhs7.onrender.com)
 
 [![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/Django-5.2.7-green.svg)](https://www.djangoproject.com/)
