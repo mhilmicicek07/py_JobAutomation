@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.translation import gettext_lazy as _
 from cv_manager.models import CV
 from job_analyzer.models import JobPosting
 from .encryption import encrypt_api_key, decrypt_api_key
@@ -22,17 +23,17 @@ class UserAISettings(models.Model):
         max_length=20, 
         choices=PROVIDER_CHOICES, 
         default="openai",
-        help_text="Kullanmak istediğiniz AI sağlayıcısı."
+        help_text=_("Der KI-Anbieter, den Sie verwenden möchten.")
     )
     api_key = models.CharField(
         max_length=512,  # Şifrelenmiş key daha uzun olabilir
         blank=True, 
-        help_text="Seçilen sağlayıcıya ait API Anahtarı (şifrelenmiş olarak saklanır)"
+        help_text=_("API-Schlüssel des ausgewählten Anbieters (wird verschlüsselt gespeichert)")
     )
     model_name = models.CharField(
         max_length=50, 
         blank=True, 
-        help_text="Özel model adı (Boş bırakılırsa varsayılan kullanılır. Örn: gpt-4o-mini)"
+        help_text=_("Benutzerdefinierter Modellname (Wenn leer, wird der Standard verwendet. Z. B. gpt-4o-mini)")
     )
 
     def save(self, *args, **kwargs):
@@ -107,8 +108,8 @@ class CVSource(models.Model):
     Aynı CV’ye birden fazla varyasyon eklenebilir.
     """
     cv = models.ForeignKey(CV, on_delete=models.CASCADE, related_name="sources")
-    raw_text = models.TextField(help_text="CV içeriğini buraya yapıştırın.")
-    note = models.CharField(max_length=100, blank=True, help_text="Örn: LinkedIn versiyonu")
+    raw_text = models.TextField(help_text=_("Fügen Sie hier den CV-Inhalt ein."))
+    note = models.CharField(max_length=100, blank=True, help_text=_("Z. B. LinkedIn-Version"))
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

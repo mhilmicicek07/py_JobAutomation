@@ -1,13 +1,14 @@
 from django import forms
+from django.utils.translation import gettext_lazy as _
 from .models import UserAISettings
 
 class AISettingsForm(forms.ModelForm):
-    # API key'i şifre alanı gibi (*****) göstermek için widget özelleştiriyoruz
+    # API-Schlüssel als Passwortfeld (*****) anzeigen
     api_key = forms.CharField(
         widget=forms.PasswordInput(attrs={"class": "form-control"}),
         required=False,
         label="API Key",
-        help_text="API anahtarınız şifrelenerek saklanmaz, güvenli ortamda tuttuğunuzdan emin olun."
+        help_text=_("Ihr API-Schlüssel wird verschlüsselt gespeichert. Achten Sie dennoch auf eine sichere Umgebung.")
     )
 
     class Meta:
