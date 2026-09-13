@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext as _
 from .models import *
 from .forms import *
 from ai_bridge.models import CVSource, UserAISettings
@@ -78,7 +79,7 @@ def cv_import(request, pk):
             snapshot = SimpleNamespace(output=data)
             stats = ai_services.apply_cv_snapshot(cv, snapshot)
 
-            messages.success(request, f"AI-Import fertig: {stats.get('skills',0)} Skills.")
+            messages.success(request, _("AI-Import fertig: %(count)s Skills.") % {"count": stats.get('skills', 0)})
             return redirect("cv_manager:cv_detail", pk=cv.pk)
     else:
         form = CVImportForm()
@@ -89,7 +90,7 @@ def cv_delete(request, pk):
     cv = get_object_or_404(CV, pk=pk, user=request.user)
     if request.method == "POST":
         cv.delete()
-        messages.success(request, f"CV '{cv.full_name}' gelöscht.")
+        messages.success(request, _("CV '%(name)s' gelöscht.") % {"name": cv.full_name})
         return redirect("cv_manager:dashboard")
     return render(request, "cv_manager/cv_delete_confirm.html", {"cv": cv})
 
@@ -124,11 +125,11 @@ def add_experience(request, cv_id):
             exp = form.save(commit=False)
             exp.cv = cv
             exp.save()
-            messages.success(request, "Berufserfahrung hinzugefügt.")
+            messages.success(request, _("Berufserfahrung hinzugefügt."))
             return redirect("cv_manager:cv_detail", pk=cv.pk)
     else:
         form = ExperienceForm()
-    return render(request, "cv_manager/item_form.html", {"form": form, "title": "Erfahrung hinzufügen"})
+    return render(request, "cv_manager/item_form.html", {"form": form, "title": _("Erfahrung hinzufügen")})
 
 @login_required
 def edit_experience(request, cv_id, exp_id):
@@ -138,11 +139,11 @@ def edit_experience(request, cv_id, exp_id):
         form = ExperienceForm(request.POST, instance=exp)
         if form.is_valid():
             form.save()
-            messages.success(request, "Berufserfahrung aktualisiert.")
+            messages.success(request, _("Berufserfahrung aktualisiert."))
             return redirect("cv_manager:cv_detail", pk=cv.pk)
     else:
         form = ExperienceForm(instance=exp)
-    return render(request, "cv_manager/item_form.html", {"form": form, "title": "Erfahrung bearbeiten"})
+    return render(request, "cv_manager/item_form.html", {"form": form, "title": _("Erfahrung bearbeiten")})
 
 @login_required
 def delete_experience(request, cv_id, exp_id):
@@ -150,7 +151,7 @@ def delete_experience(request, cv_id, exp_id):
     exp = get_object_or_404(Experience, pk=exp_id, cv=cv)
     if request.method == "POST":
         exp.delete()
-        messages.success(request, "Eintrag gelöscht.")
+        messages.success(request, _("Eintrag gelöscht."))
     return redirect("cv_manager:cv_detail", pk=cv.pk)
 
 
@@ -165,11 +166,11 @@ def add_education(request, cv_id):
             edu = form.save(commit=False)
             edu.cv = cv
             edu.save()
-            messages.success(request, "Ausbildung hinzugefügt.")
+            messages.success(request, _("Ausbildung hinzugefügt."))
             return redirect("cv_manager:cv_detail", pk=cv.pk)
     else:
         form = EducationForm()
-    return render(request, "cv_manager/item_form.html", {"form": form, "title": "Ausbildung hinzufügen"})
+    return render(request, "cv_manager/item_form.html", {"form": form, "title": _("Ausbildung hinzufügen")})
 
 @login_required
 def edit_education(request, cv_id, edu_id):
@@ -179,11 +180,11 @@ def edit_education(request, cv_id, edu_id):
         form = EducationForm(request.POST, instance=edu)
         if form.is_valid():
             form.save()
-            messages.success(request, "Ausbildung aktualisiert.")
+            messages.success(request, _("Ausbildung aktualisiert."))
             return redirect("cv_manager:cv_detail", pk=cv.pk)
     else:
         form = EducationForm(instance=edu)
-    return render(request, "cv_manager/item_form.html", {"form": form, "title": "Ausbildung bearbeiten"})
+    return render(request, "cv_manager/item_form.html", {"form": form, "title": _("Ausbildung bearbeiten")})
 
 @login_required
 def delete_education(request, cv_id, edu_id):
@@ -191,7 +192,7 @@ def delete_education(request, cv_id, edu_id):
     edu = get_object_or_404(Education, pk=edu_id, cv=cv)
     if request.method == "POST":
         edu.delete()
-        messages.success(request, "Eintrag gelöscht.")
+        messages.success(request, _("Eintrag gelöscht."))
     return redirect("cv_manager:cv_detail", pk=cv.pk)
 
 
@@ -208,9 +209,9 @@ def add_skill(request, cv_id):
                 skill = form.save(commit=False)
                 skill.cv = cv
                 skill.save()
-                messages.success(request, f"Skill '{skill.name}' hinzugefügt.")
+                messages.success(request, _("Skill '%(name)s' hinzugefügt.") % {"name": skill.name})
             except Exception:
-                messages.warning(request, "Dieser Skill existiert bereits.")
+                messages.warning(request, _("Dieser Skill existiert bereits."))
             return redirect("cv_manager:cv_detail", pk=cv.pk)
     return redirect("cv_manager:cv_detail", pk=cv.pk)
 
@@ -220,7 +221,7 @@ def delete_skill(request, cv_id, skill_id):
     skill = get_object_or_404(Skill, pk=skill_id, cv=cv)
     if request.method == "POST":
         skill.delete()
-        messages.success(request, "Skill gelöscht.")
+        messages.success(request, _("Skill gelöscht."))
     return redirect("cv_manager:cv_detail", pk=cv.pk)
 
 # ── LANGUAGE CRUD ─────────────────────────────────────────────────────────────
@@ -234,7 +235,7 @@ def add_language(request, cv_id):
             lang = form.save(commit=False)
             lang.cv = cv
             lang.save()
-            messages.success(request, f"Sprache '{lang.name}' hinzugefügt.")
+            messages.success(request, _("Sprache '%(name)s' hinzugefügt.") % {"name": lang.name})
             return redirect("cv_manager:cv_detail", pk=cv.pk)
     return redirect("cv_manager:cv_detail", pk=cv.pk)
 
@@ -244,5 +245,5 @@ def delete_language(request, cv_id, lang_id):
     lang = get_object_or_404(Language, pk=lang_id, cv=cv)
     if request.method == "POST":
         lang.delete()
-        messages.success(request, "Sprache gelöscht.")
+        messages.success(request, _("Sprache gelöscht."))
     return redirect("cv_manager:cv_detail", pk=cv.pk)

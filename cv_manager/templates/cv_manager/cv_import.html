@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}CV Import (AI){% endblock %}
+{% block title %}{% trans "CV Import (AI)" %}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -9,8 +10,8 @@
             <div class="card-header bg-dark text-white d-flex align-items-center">
                 <i class="fa-solid fa-robot fa-lg me-3 text-info"></i>
                 <div>
-                    <h5 class="mb-0">AI Import für: {{ cv.full_name }}</h5>
-                    <small class="opacity-75">Fügen Sie Ihren CV-Text ein, die KI extrahiert Skills und Erfahrung.</small>
+                    <h5 class="mb-0">{% blocktrans with name=cv.full_name %}AI Import für: {{ name }}{% endblocktrans %}</h5>
+                    <small class="opacity-75">{% trans "Fügen Sie Ihren CV-Text ein, die KI extrahiert Skills und Erfahrung." %}</small>
                 </div>
             </div>
             <div class="card-body p-4">
@@ -18,9 +19,9 @@
                 <div class="alert alert-info d-flex align-items-center" role="alert">
                     <i class="fa-solid fa-circle-info me-3 fa-lg"></i>
                     <div>
-                        <strong>Wie funktioniert das?</strong>
+                        <strong>{% trans "Wie funktioniert das?" %}</strong>
                         <br>
-                        Kopieren Sie einfach den Text aus Ihrem PDF- oder Word-Lebenslauf (STRG+A, STRG+C) und fügen Sie ihn unten ein.
+                        {% trans "Kopieren Sie einfach den Text aus Ihrem PDF- oder Word-Lebenslauf (STRG+A, STRG+C) und fügen Sie ihn unten ein." %}
                     </div>
                 </div>
 
@@ -38,9 +39,9 @@
                     {% endfor %}
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <a href="{% url 'cv_manager:dashboard' %}" class="btn btn-outline-secondary">Abbrechen</a>
+                        <a href="{% url 'cv_manager:dashboard' %}" class="btn btn-outline-secondary">{% trans "Abbrechen" %}</a>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fa-solid fa-wand-magic-sparkles me-2"></i> Daten extrahieren
+                            <i class="fa-solid fa-wand-magic-sparkles me-2"></i> {% trans "Daten extrahieren" %}
                         </button>
                     </div>
                 </form>

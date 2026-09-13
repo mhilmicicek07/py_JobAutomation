@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}Lebenslauf verwalten{% endblock %}
+{% block title %}{% trans "Lebenslauf verwalten" %}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -9,7 +10,7 @@
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">
                     <i class="fa-solid fa-user-pen me-2"></i>
-                    {% if cv %}Lebenslauf bearbeiten{% else %}Neuen Lebenslauf erstellen{% endif %}
+                    {% if cv %}{% trans "Lebenslauf bearbeiten" %}{% else %}{% trans "Neuen Lebenslauf erstellen" %}{% endif %}
                 </h5>
             </div>
             <div class="card-body p-4">
@@ -31,10 +32,10 @@
 
                     <div class="d-flex justify-content-between mt-4">
                         <a href="{% url 'cv_manager:dashboard' %}" class="btn btn-outline-secondary">
-                            <i class="fa-solid fa-arrow-left me-1"></i> Abbrechen
+                            <i class="fa-solid fa-arrow-left me-1"></i> {% trans "Abbrechen" %}
                         </a>
                         <button type="submit" class="btn btn-success px-4">
-                            <i class="fa-solid fa-check me-1"></i> Speichern
+                            <i class="fa-solid fa-check me-1"></i> {% trans "Speichern" %}
                         </button>
                     </div>
                 </form>

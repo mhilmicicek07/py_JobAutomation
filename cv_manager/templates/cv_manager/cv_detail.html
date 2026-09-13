@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %}{{ cv.full_name }} - Details{% endblock %}
+{% block title %}{{ cv.full_name }} - {% trans "Details" %}{% endblock %}
 
 {% block content %}
 <div class="card shadow-sm mb-4 border-start border-4 border-primary">
@@ -14,7 +15,7 @@
         </div>
         <div class="d-flex gap-2">
             <a href="{% url 'cv_manager:cv_update' cv.pk %}" class="btn btn-outline-primary">
-                <i class="fa-solid fa-pen"></i> Kopfdaten bearbeiten
+                <i class="fa-solid fa-pen"></i> {% trans "Kopfdaten bearbeiten" %}
             </a>
             <a href="{% url 'cv_manager:cv_import' cv.pk %}" class="btn btn-dark">
                 <i class="fa-solid fa-robot me-1"></i> AI Import
@@ -26,9 +27,9 @@
 <div class="row">
     <div class="col-lg-7 mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="mb-0"><i class="fa-solid fa-briefcase me-2 text-secondary"></i>Berufserfahrung</h4>
+            <h4 class="mb-0"><i class="fa-solid fa-briefcase me-2 text-secondary"></i>{% trans "Berufserfahrung" %}</h4>
             <a href="{% url 'cv_manager:add_experience' cv.pk %}" class="btn btn-sm btn-success">
-                <i class="fa-solid fa-plus"></i> Hinzufügen
+                <i class="fa-solid fa-plus"></i> {% trans "Hinzufügen" %}
             </a>
         </div>
 
@@ -36,10 +37,10 @@
         <div class="card mb-3 shadow-sm hover-shadow">
             <div class="card-body position-relative">
                 <div class="position-absolute top-0 end-0 p-3">
-                    <a href="{% url 'cv_manager:edit_experience' cv.pk exp.pk %}" class="btn btn-sm btn-outline-secondary border-0" title="Bearbeiten">
+                    <a href="{% url 'cv_manager:edit_experience' cv.pk exp.pk %}" class="btn btn-sm btn-outline-secondary border-0" title="{% trans 'Bearbeiten' %}">
                         <i class="fa-solid fa-pen"></i>
                     </a>
-                    <button type="button" class="btn btn-sm btn-outline-danger border-0" data-bs-toggle="modal" data-bs-target="#deleteExpModal{{ exp.pk }}" title="Löschen">
+                    <button type="button" class="btn btn-sm btn-outline-danger border-0" data-bs-toggle="modal" data-bs-target="#deleteExpModal{{ exp.pk }}" title="{% trans 'Löschen' %}">
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>
@@ -49,7 +50,7 @@
                 <p class="text-muted small mb-2">
                     <i class="fa-regular fa-calendar me-1"></i>
                     {{ exp.start_date|date:"M Y" }} – 
-                    {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}Aktuell{% endif %}
+                    {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}{% trans "Aktuell" %}{% endif %}
                 </p>
                 
                 {% if exp.description %}
@@ -64,17 +65,17 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Eintrag löschen?</h5>
+                        <h5 class="modal-title">{% trans "Eintrag löschen?" %}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        Möchten Sie die Erfahrung bei <strong>{{ exp.company }}</strong> wirklich löschen?
+                        {% blocktrans with company=exp.company %}Möchten Sie die Erfahrung bei <strong>{{ company }}</strong> wirklich löschen?{% endblocktrans %}
                     </div>
                     <div class="modal-footer">
                         <form action="{% url 'cv_manager:delete_experience' cv.pk exp.pk %}" method="post">
                             {% csrf_token %}
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-                            <button type="submit" class="btn btn-danger">Löschen</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Abbrechen" %}</button>
+                            <button type="submit" class="btn btn-danger">{% trans "Löschen" %}</button>
                         </form>
                     </div>
                 </div>
@@ -82,7 +83,7 @@
         </div>
         {% empty %}
         <div class="alert alert-light text-center border border-dashed">
-            <p class="mb-0 text-muted">Noch keine Erfahrung eingetragen.</p>
+            <p class="mb-0 text-muted">{% trans "Noch keine Erfahrung eingetragen." %}</p>
         </div>
         {% endfor %}
     </div>
@@ -91,7 +92,7 @@
         
         <div class="mb-5">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="mb-0"><i class="fa-solid fa-graduation-cap me-2 text-secondary"></i>Ausbildung</h4>
+                <h4 class="mb-0"><i class="fa-solid fa-graduation-cap me-2 text-secondary"></i>{% trans "Ausbildung" %}</h4>
                 <a href="{% url 'cv_manager:add_education' cv.pk %}" class="btn btn-sm btn-success">
                     <i class="fa-solid fa-plus"></i>
                 </a>
@@ -111,34 +112,34 @@
                     <div class="fw-bold">{{ edu.degree }}</div>
                     <div class="small text-muted">{{ edu.institution }}</div>
                     <div class="small text-muted">
-                        {{ edu.start_date|date:"Y" }} – {% if edu.end_date %}{{ edu.end_date|date:"Y" }}{% else %}Aktuell{% endif %}
+                        {{ edu.start_date|date:"Y" }} – {% if edu.end_date %}{{ edu.end_date|date:"Y" }}{% else %}{% trans "Aktuell" %}{% endif %}
                     </div>
                 </div>
             </div>
             {% empty %}
-            <div class="text-muted small fst-italic">Keine Ausbildung eingetragen.</div>
+            <div class="text-muted small fst-italic">{% trans "Keine Ausbildung eingetragen." %}</div>
             {% endfor %}
         </div>
 
         <div class="mb-5">
-            <h4 class="mb-3"><i class="fa-solid fa-language me-2 text-secondary"></i>Sprachen</h4>
+            <h4 class="mb-3"><i class="fa-solid fa-language me-2 text-secondary"></i>{% trans "Sprachen" %}</h4>
             
             <div class="card shadow-sm">
                 <div class="card-body">
                     <form action="{% url 'cv_manager:add_language' cv.pk %}" method="post" class="row g-2 align-items-center mb-3">
                         {% csrf_token %}
                         <div class="col-6">
-                            <input type="text" name="name" class="form-control form-control-sm" placeholder="Sprache (z. B. Englisch)" required>
+                            <input type="text" name="name" class="form-control form-control-sm" placeholder="{% trans 'Sprache (z. B. Englisch)' %}" required>
                         </div>
                         <div class="col-4">
                             <select name="level" class="form-select form-select-sm">
-                                <option value="Native">Muttersprache</option>
-                                <option value="C2">C2 (Exzellent)</option>
-                                <option value="C1">C1 (Fortgeschritten)</option>
-                                <option value="B2" selected>B2 (Gut)</option>
-                                <option value="B1">B1 (Mittel)</option>
-                                <option value="A2">A2 (Grundlagen)</option>
-                                <option value="A1">A1 (Einstieg)</option>
+                                <option value="Native">{% trans "Muttersprache" %}</option>
+                                <option value="C2">{% trans "C2 (Exzellent)" %}</option>
+                                <option value="C1">{% trans "C1 (Fortgeschritten)" %}</option>
+                                <option value="B2" selected>{% trans "B2 (Gut)" %}</option>
+                                <option value="B1">{% trans "B1 (Mittel)" %}</option>
+                                <option value="A2">{% trans "A2 (Grundlagen)" %}</option>
+                                <option value="A1">{% trans "A1 (Einstieg)" %}</option>
                             </select>
                         </div>
                         <div class="col-2">
@@ -157,13 +158,13 @@
                             </div>
                             <form action="{% url 'cv_manager:delete_language' cv.pk lang.pk %}" method="post" style="display:inline;">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Löschen">
+                                <button type="submit" class="btn btn-link text-danger p-0 border-0" title="{% trans 'Löschen' %}">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </form>
                         </li>
                         {% empty %}
-                        <li class="list-group-item text-muted small fst-italic px-0">Keine Sprachen eingetragen.</li>
+                        <li class="list-group-item text-muted small fst-italic px-0">{% trans "Keine Sprachen eingetragen." %}</li>
                         {% endfor %}
                     </ul>
                 </div>
@@ -178,10 +179,10 @@
                     <form action="{% url 'cv_manager:add_skill' cv.pk %}" method="post" class="row g-2 align-items-center mb-3">
                         {% csrf_token %}
                         <div class="col-8">
-                            <input type="text" name="name" class="form-control form-control-sm" placeholder="Neuer Skill (z. B. Docker)" required>
+                            <input type="text" name="name" class="form-control form-control-sm" placeholder="{% trans 'Neuer Skill (z. B. Docker)' %}" required>
                         </div>
                         <div class="col-4">
-                            <button type="submit" class="btn btn-sm btn-primary w-100">Hinzufügen</button>
+                            <button type="submit" class="btn btn-sm btn-primary w-100">{% trans "Hinzufügen" %}</button>
                         </div>
                     </form>
 
